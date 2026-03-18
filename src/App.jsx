@@ -1193,7 +1193,7 @@ function ResultsRoute({ session }) {
   const hasOverrides = Object.keys(overrides).length > 0;
   const showConfetti = pct >= 80;
 
-  const msg = pct >= 90 ? ["¡Excelente!", "🎉"] : pct >= 70 ? ["¡Muy bien!", "👏"] : pct >= 50 ? ["¡Buen esfuerzo!", "💪"] : ["¡Sigue practicando!", "📚"];
+  const msg = pct >= 90 ? "¡Excelente!" : pct >= 70 ? "¡Muy bien!" : pct >= 50 ? "¡Buen esfuerzo!" : "¡Sigue practicando!";
 
   const overrideTimerRef = useRef(null);
   useEffect(() => {
@@ -1298,22 +1298,22 @@ function ResultsRoute({ session }) {
           marginBottom: 20,
         }}>
           {/* Score circle */}
-          <div style={{ position: "relative", display: "inline-block", marginBottom: 12 }}>
-            <svg width="110" height="110" viewBox="0 0 110 110">
+          <div style={{ position: "relative", width: 110, height: 110, margin: "0 auto 12px" }}>
+            <svg width="110" height="110" viewBox="0 0 110 110" style={{ display: "block" }}>
               <circle cx="55" cy="55" r="48" fill="none" stroke={C.border} strokeWidth="5" />
               <circle cx="55" cy="55" r="48" fill="none" stroke={scoreColor}
                 strokeWidth="5" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 48} strokeDashoffset={(2 * Math.PI * 48) - (pct / 100) * (2 * Math.PI * 48)}
                 transform="rotate(-90 55 55)" style={{ animation: "scoreReveal 1s ease-out forwards" }} />
             </svg>
-            <div className="score-anim" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+            <div className="score-anim" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ fontSize: 30, fontWeight: 700, color: C.text, fontFamily: "'DM Serif Display', serif" }}>{pct}%</div>
             </div>
           </div>
 
           {/* Message */}
           <h1 style={{ fontSize: 24, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
-            {msg[1]} {msg[0]}
+            {msg}
           </h1>
           <p style={{ color: C.muted, fontSize: 14, marginBottom: 16 }}>
             {correct} of {total} correct{hasOverrides ? " (inc. overrides)" : ""}
