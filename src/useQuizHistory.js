@@ -4,6 +4,7 @@ import { supabase } from "./lib/supabase.js";
 import { enqueue } from "./lib/syncQueue.js";
 
 const OFFLINE_QUIZZES_KEY = "offline_quizzes";
+const CACHED_QUIZZES_KEY = "cached_quizzes";
 
 export function useQuizHistory(session) {
   const [attempts, setAttempts] = useState([]);
@@ -17,6 +18,13 @@ export function useQuizHistory(session) {
 
     const attemptsP = getAttempts(50);
 
+    const offlineQuizzes = () => {
+      try {
+        return JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]")
+          .map((row) => ({ id: row.id, data: row.quiz_data, savedAt: new Date(row.created_at).getTime() }));
+      } catch { return []; }
+    };
+
     const quizzesP = userId
       ? supabase
           .from("saved_quizzes")
@@ -24,14 +32,24 @@ export function useQuizHistory(session) {
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .then(({ data, error }) => {
-            if (error) { console.warn("Failed to fetch quizzes:", error); return []; }
-            return (data || []).map((row) => ({
+            if (error) {
+              console.warn("Failed to fetch quizzes:", error);
+              // Offline fallback: return cached cloud quizzes
+              try {
+                const cached = JSON.parse(localStorage.getItem(CACHED_QUIZZES_KEY) || "[]");
+                return [...cached, ...offlineQuizzes()];
+              } catch { return offlineQuizzes(); }
+            }
+            const cloud = (data || []).map((row) => ({
               id: row.id,
               data: row.quiz_data,
               savedAt: new Date(row.created_at).getTime(),
             }));
+            // Cache for offline use
+            try { localStorage.setItem(CACHED_QUIZZES_KEY, JSON.stringify(cloud)); } catch {}
+            return [...cloud, ...offlineQuizzes()];
           })
-      : Promise.resolve([]);
+      : Promise.resolve(offlineQuizzes());
 
     Promise.all([attemptsP, quizzesP]).then(([a, q]) => {
       setAttempts(a);
@@ -137,10 +155,13 @@ export async function getQuizBySupabaseId(id) {
     .single();
 
   if (error || !data) {
-    // Fallback: check localStorage in case it was saved offline
+    // Fallback: check offline storage and cached cloud quizzes
     const offline = JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]");
     const found = offline.find((q) => q.id === id);
-    return found ? { id: found.id, data: found.quiz_data } : null;
+    if (found) return { id: found.id, data: found.quiz_data };
+    const cached = JSON.parse(localStorage.getItem(CACHED_QUIZZES_KEY) || "[]");
+    const cachedFound = cached.find((q) => q.id === id);
+    return cachedFound || null;
   }
 
   return { id: data.id, data: data.quiz_data };
