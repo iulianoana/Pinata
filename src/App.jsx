@@ -1527,7 +1527,7 @@ function ResultsRoute({ session }) {
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
       {showConfetti && <Confetti />}
 
-      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px 32px", paddingTop: "calc(56px + env(safe-area-inset-top, 0px))" }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px 32px", paddingTop: "calc(45px + max(16px, env(safe-area-inset-top, 16px)))" }}>
         {/* Spacer handled by paddingTop above */}
 
         {/* Score card */}
@@ -1639,8 +1639,8 @@ function ResultsRoute({ session }) {
         <div ref={reviewRef}>
           {/* Sticky review header */}
           <div style={{
-            position: "sticky", top: "calc(52px + env(safe-area-inset-top, 0px))", zIndex: 10, background: C.bg,
-            padding: "16px 0 12px",
+            position: "sticky", top: "calc(45px + max(16px, env(safe-area-inset-top, 16px)))", zIndex: 10, background: C.bg,
+            padding: "0 0 12px",
           }}>
             <div style={{ marginBottom: 12 }}>
               <h2 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 4 }}>Detailed review</h2>
