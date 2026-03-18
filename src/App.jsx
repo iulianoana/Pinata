@@ -263,8 +263,8 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
         </div>
       )}
       <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
-        <div style={{ fontSize: 56, marginBottom: 8 }}>📖</div>
-        <h1 style={{ fontSize: 36, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Práctica</h1>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>🪅</div>
+        <h1 style={{ fontSize: 36, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Piñata</h1>
         <p style={{ color: C.muted, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>
           Upload a quiz file to start your Spanish practice session
         </p>
