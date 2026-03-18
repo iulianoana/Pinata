@@ -1648,7 +1648,7 @@ function ResultsRoute({ session }) {
                 borderLeft: `4px solid ${r.correct ? C.success : C.error}`,
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Q{i + 1} \u00b7 {typeLabels[q.type]}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Q{i + 1} &middot; {typeLabels[q.type]}</span>
                   <span style={{ fontSize: 12, fontWeight: 800, color: r.correct ? C.success : C.error }}>
                     {wasOverridden ? "Overridden" : r.correct ? "Correct" : "Incorrect"}
                   </span>
