@@ -1,3 +1,5 @@
+import { buildSystemInstruction } from "./prompt.js";
+
 export async function POST(req) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -6,17 +8,7 @@ export async function POST(req) {
 
   try {
     const { unitContext } = await req.json();
-
-    const systemInstruction = `You are a friendly Spanish conversation partner for a beginner (A1 level) learner. Have natural, simple conversations in Spanish.
-
-Rules:
-- Speak ONLY in Spanish. Keep sentences short and simple (A1 level).
-- Use vocabulary and grammar from this unit context: ${unitContext || "General beginner Spanish conversation practice."}
-- If the user makes a mistake, gently correct them, then continue the conversation.
-- Ask follow-up questions to keep things flowing.
-- If the user seems stuck, offer a simpler way to say what they're trying to say.
-- Keep responses short — this is a real-time voice conversation, not a text chat.
-- Be warm, encouraging, patient.`;
+    const systemInstruction = buildSystemInstruction(unitContext || null);
 
     return Response.json({
       apiKey,
