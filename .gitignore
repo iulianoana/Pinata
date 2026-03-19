@@ -2,3 +2,14 @@ node_modules
 dist
 .DS_Store
 .env
+
+# Next.js
+.next
+
+# PWA generated files
+sw.js
+sw.js.map
+workbox-*.js
+workbox-*.js.map
+swe-worker-*.js
+swe-worker-*.js.map

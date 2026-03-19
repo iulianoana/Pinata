@@ -1,0 +1,17 @@
+{
+  "name": "Piñata - Habla español?",
+  "short_name": "Piñata",
+  "description": "Spanish quiz practice app",
+  "theme_color": "#00B4A0",
+  "background_color": "#F0FAF8",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icons/app-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
