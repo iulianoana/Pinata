@@ -173,17 +173,34 @@ export function useInstantMode() {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
           }
-          // Ignore part.text — it's thinking/reasoning from this model
+          // Collect non-thought text as fallback transcript
+          if (part.text && !part.thought) {
+            pendingTextRef.current += part.text;
+          }
         }
       }
 
-      // Collect output audio transcription (actual spoken Spanish)
+      // Output audio transcription — add directly to transcript
+      // (may arrive before, during, or after turnComplete)
       if (msg.serverContent.outputTranscript) {
-        pendingTextRef.current += msg.serverContent.outputTranscript;
+        const chunk = msg.serverContent.outputTranscript;
+        // Clear part.text fallback since we have real transcription
+        pendingTextRef.current = "";
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "model") {
+            return [
+              ...prev.slice(0, -1),
+              { ...last, text: last.text + chunk },
+            ];
+          }
+          return [...prev, { role: "model", text: chunk }];
+        });
       }
 
       if (turnComplete) {
         setIsAISpeaking(false);
+        // Fallback: use filtered part.text only if no outputTranscript arrived
         if (pendingTextRef.current) {
           const cleaned = cleanTranscriptText(pendingTextRef.current);
           pendingTextRef.current = "";
@@ -196,22 +213,16 @@ export function useInstantMode() {
       if (interrupted) {
         setIsAISpeaking(false);
         clearPlayback();
-        if (pendingTextRef.current) {
-          const cleaned = cleanTranscriptText(pendingTextRef.current + "...");
-          pendingTextRef.current = "";
-          if (cleaned) {
-            setTranscript((prev) => [...prev, { role: "model", text: cleaned }]);
-          }
-        }
+        pendingTextRef.current = "";
       }
     }
 
-    // User speech transcript (if Gemini provides it)
+    // User speech transcript
     if (msg.serverContent?.inputTranscript) {
-      const cleaned = cleanTranscriptText(msg.serverContent.inputTranscript);
-      if (cleaned) {
-        setTranscript((prev) => [...prev, { role: "user", text: cleaned }]);
-      }
+      setTranscript((prev) => [
+        ...prev,
+        { role: "user", text: msg.serverContent.inputTranscript },
+      ]);
     }
   };
 
