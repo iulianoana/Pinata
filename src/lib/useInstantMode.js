@@ -22,6 +22,27 @@ function pcm16ToFloat32(buffer) {
   return float32;
 }
 
+function isEnglishReasoning(text) {
+  const words = text.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+  if (words.length < 3) return false;
+  // English function words that virtually never appear in Spanish
+  const en = new Set([
+    "the", "is", "are", "was", "were", "have", "has", "had", "been", "being",
+    "will", "would", "could", "should", "shall", "may", "might", "must",
+    "do", "does", "did", "not", "and", "but", "or", "for", "yet", "so",
+    "if", "then", "than", "that", "this", "these", "those",
+    "he", "she", "it", "they", "them", "their", "its",
+    "my", "your", "his", "her", "our", "who", "whom", "which", "what",
+    "where", "when", "how", "why", "with", "from", "into", "about",
+    "between", "through", "during", "before", "after", "also", "just",
+    "only", "very", "much", "more", "most", "some", "such", "each",
+    "every", "to", "of", "in", "on", "at", "by", "an", "as", "up",
+  ]);
+  let count = 0;
+  for (const w of words) if (en.has(w)) count++;
+  return count / words.length > 0.12;
+}
+
 function cleanTranscriptText(rawText) {
   // Remove markdown bold/italic markers
   let cleaned = rawText.replace(/\*\*.*?\*\*/g, "").replace(/\*.*?\*/g, "");
@@ -29,8 +50,10 @@ function cleanTranscriptText(rawText) {
   cleaned = cleaned.replace(/\[.*?\]/g, "").replace(/\(.*?\)/g, "");
   // Trim whitespace
   cleaned = cleaned.trim();
-  // If nothing meaningful remains, return null (don't add to transcript)
-  return cleaned.length > 0 ? cleaned : null;
+  if (cleaned.length === 0) return null;
+  // Filter out English reasoning text (model should speak only Spanish)
+  if (isEnglishReasoning(cleaned)) return null;
+  return cleaned;
 }
 
 export function useInstantMode() {
@@ -150,10 +173,13 @@ export function useInstantMode() {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
           }
-          if (part.text) {
-            pendingTextRef.current += part.text;
-          }
+          // Ignore part.text — it's thinking/reasoning from this model
         }
+      }
+
+      // Collect output audio transcription (actual spoken Spanish)
+      if (msg.serverContent.outputTranscript) {
+        pendingTextRef.current += msg.serverContent.outputTranscript;
       }
 
       if (turnComplete) {
@@ -318,6 +344,7 @@ export function useInstantMode() {
               systemInstruction: {
                 parts: [{ text: config.systemInstruction }],
               },
+              outputAudioTranscription: {},
             },
           })
         );

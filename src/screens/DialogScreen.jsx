@@ -177,27 +177,23 @@ export default function DialogScreen() {
             {/* Carolina avatar */}
             <div
               style={{
-                width: 120,
-                height: 120,
+                width: 152,
+                height: 152,
                 borderRadius: "50%",
-                background: B.light,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                overflow: "hidden",
                 marginBottom: 20,
-                boxShadow: `0 0 0 16px ${B.ring}, 0 0 0 32px rgba(66,133,244,0.05)`,
+                boxShadow: `0 0 0 12px ${B.ring}, 0 0 0 24px rgba(66,133,244,0.05)`,
               }}
             >
-              <span
+              <img
+                src="/images/Carolina.png"
+                alt="Carolina"
                 style={{
-                  fontSize: 48,
-                  fontWeight: 900,
-                  color: B.primary,
-                  fontFamily: "'Nunito', sans-serif",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
                 }}
-              >
-                C
-              </span>
+              />
             </div>
             <p
               style={{
@@ -283,19 +279,24 @@ export default function DialogScreen() {
         >
           <div
             style={{
-              width: 120,
-              height: 120,
+              width: 152,
+              height: 152,
               borderRadius: "50%",
-              background: B.light,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              overflow: "hidden",
               marginBottom: 28,
               animation: "orbPulse 1.5s infinite ease-in-out",
-              boxShadow: `0 0 0 16px ${B.ring}`,
+              boxShadow: `0 0 0 12px ${B.ring}, 0 0 0 24px rgba(66,133,244,0.05)`,
             }}
           >
-            <PhoneIcon size={48} color={B.primary} />
+            <img
+              src="/images/Carolina.png"
+              alt="Carolina"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
           </div>
           <p
             style={{
@@ -332,8 +333,8 @@ export default function DialogScreen() {
             <div
               style={{
                 position: "relative",
-                width: showTranscript ? 80 : 160,
-                height: showTranscript ? 80 : 160,
+                width: showTranscript ? 80 : 200,
+                height: showTranscript ? 80 : 200,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -348,8 +349,8 @@ export default function DialogScreen() {
                     key={i}
                     style={{
                       position: "absolute",
-                      width: 120,
-                      height: 120,
+                      width: 152,
+                      height: 152,
                       borderRadius: "50%",
                       border: `2px solid ${B.primary}`,
                       opacity: 0,
@@ -361,48 +362,56 @@ export default function DialogScreen() {
               {/* Main orb */}
               <div
                 style={{
-                  width: showTranscript ? 64 : 120,
-                  height: showTranscript ? 64 : 120,
+                  width: showTranscript ? 64 : 152,
+                  height: showTranscript ? 64 : 152,
                   borderRadius: "50%",
-                  background: instant.isAISpeaking ? B.primary : B.light,
+                  overflow: "hidden",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  boxShadow: showTranscript ? "none" : `0 0 0 12px ${B.ring}, 0 0 0 24px rgba(66,133,244,0.05)`,
                   animation: instant.isAISpeaking
                     ? "none"
                     : "orbPulse 3s infinite ease-in-out",
-                  transition: "background 0.3s, width 0.3s, height 0.3s",
+                  transition: "all 0.3s",
                   zIndex: 1,
                 }}
               >
-                {instant.isAISpeaking ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 3,
-                      alignItems: "center",
-                      height: showTranscript ? 24 : 36,
-                    }}
-                  >
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          width: 4,
-                          borderRadius: 2,
-                          background: "#fff",
-                          animation: `waveBar 0.6s ${i * 0.1}s infinite ease-in-out alternate`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <HeadphonesIcon
-                    size={showTranscript ? 28 : 48}
-                    color={B.primary}
-                  />
-                )}
+                <img
+                  src="/images/Carolina.png"
+                  alt="Carolina"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
               </div>
+              {/* Speaking wave overlay */}
+              {instant.isAISpeaking && (
+                <div
+                  style={{
+                    position: "absolute",
+                    zIndex: 2,
+                    display: "flex",
+                    gap: 3,
+                    alignItems: "center",
+                    height: showTranscript ? 24 : 36,
+                  }}
+                >
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: 4,
+                        borderRadius: 2,
+                        background: "#fff",
+                        animation: `waveBar 0.6s ${i * 0.1}s infinite ease-in-out alternate`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Status text */}
