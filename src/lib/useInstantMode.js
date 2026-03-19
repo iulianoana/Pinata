@@ -128,19 +128,20 @@ export function useInstantMode() {
       return;
     }
 
-    // Log non-audio messages for debugging transcript fields
-    const hasAudio = msg.serverContent?.modelTurn?.parts?.some(
-      (p) => p.inlineData
-    );
-    if (!hasAudio) {
-      console.log("[Gemini] msg:", JSON.stringify(msg).slice(0, 500));
-    }
-
     if (msg.serverContent) {
-      const { modelTurn, turnComplete, interrupted } = msg.serverContent;
+      const { modelTurn, turnComplete, interrupted, generationComplete } =
+        msg.serverContent;
 
       if (modelTurn?.parts) {
         setIsAISpeaking(true);
+        // Close any open user bubble when model starts speaking
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "user" && !last.done) {
+            return [...prev.slice(0, -1), { ...last, done: true }];
+          }
+          return prev;
+        });
         for (const part of modelTurn.parts) {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
@@ -148,20 +149,29 @@ export function useInstantMode() {
         }
       }
 
-      // Output audio transcription (try both field names)
-      const outputText =
-        msg.serverContent.outputTranscript ??
-        msg.serverContent.outputTranscription?.text;
+      // Output audio transcription
+      const outputText = msg.serverContent.outputTranscription?.text;
       if (outputText) {
         setTranscript((prev) => {
           const last = prev[prev.length - 1];
-          if (last && last.role === "model") {
+          if (last && last.role === "model" && !last.done) {
             return [
               ...prev.slice(0, -1),
               { ...last, text: last.text + outputText },
             ];
           }
           return [...prev, { role: "model", text: outputText }];
+        });
+      }
+
+      // generationComplete marks the end of one model utterance
+      if (generationComplete) {
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "model") {
+            return [...prev.slice(0, -1), { ...last, done: true }];
+          }
+          return prev;
         });
       }
 
@@ -173,17 +183,21 @@ export function useInstantMode() {
         setIsAISpeaking(false);
         clearPlayback();
       }
-    }
 
-    // User speech transcript (try both field names)
-    const inputText =
-      msg.serverContent?.inputTranscript ??
-      msg.serverContent?.inputTranscription?.text;
-    if (inputText) {
-      setTranscript((prev) => [
-        ...prev,
-        { role: "user", text: inputText },
-      ]);
+      // User speech transcription
+      const inputText = msg.serverContent.inputTranscription?.text;
+      if (inputText) {
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "user" && !last.done) {
+            return [
+              ...prev.slice(0, -1),
+              { ...last, text: last.text + inputText },
+            ];
+          }
+          return [...prev, { role: "user", text: inputText }];
+        });
+      }
     }
   };
 
@@ -314,6 +328,7 @@ export function useInstantMode() {
               systemInstruction: {
                 parts: [{ text: config.systemInstruction }],
               },
+              inputAudioTranscription: {},
               outputAudioTranscription: {},
             },
           })
