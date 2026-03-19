@@ -22,40 +22,6 @@ function pcm16ToFloat32(buffer) {
   return float32;
 }
 
-function isEnglishReasoning(text) {
-  const words = text.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
-  if (words.length < 3) return false;
-  // English function words that virtually never appear in Spanish
-  const en = new Set([
-    "the", "is", "are", "was", "were", "have", "has", "had", "been", "being",
-    "will", "would", "could", "should", "shall", "may", "might", "must",
-    "do", "does", "did", "not", "and", "but", "or", "for", "yet", "so",
-    "if", "then", "than", "that", "this", "these", "those",
-    "he", "she", "it", "they", "them", "their", "its",
-    "my", "your", "his", "her", "our", "who", "whom", "which", "what",
-    "where", "when", "how", "why", "with", "from", "into", "about",
-    "between", "through", "during", "before", "after", "also", "just",
-    "only", "very", "much", "more", "most", "some", "such", "each",
-    "every", "to", "of", "in", "on", "at", "by", "an", "as", "up",
-  ]);
-  let count = 0;
-  for (const w of words) if (en.has(w)) count++;
-  return count / words.length > 0.12;
-}
-
-function cleanTranscriptText(rawText) {
-  // Remove markdown bold/italic markers
-  let cleaned = rawText.replace(/\*\*.*?\*\*/g, "").replace(/\*.*?\*/g, "");
-  // Remove text in brackets/parentheses that looks like stage directions
-  cleaned = cleaned.replace(/\[.*?\]/g, "").replace(/\(.*?\)/g, "");
-  // Trim whitespace
-  cleaned = cleaned.trim();
-  if (cleaned.length === 0) return null;
-  // Filter out English reasoning text (model should speak only Spanish)
-  if (isEnglishReasoning(cleaned)) return null;
-  return cleaned;
-}
-
 export function useInstantMode() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -71,7 +37,6 @@ export function useInstantMode() {
   const timerRef = useRef(null);
   const nextPlayTimeRef = useRef(0);
   const activeSourcesRef = useRef([]);
-  const pendingTextRef = useRef("");
   const connectingRef = useRef(false); // sync guard against rapid clicks
   const setupDoneRef = useRef(false);
 
@@ -118,7 +83,6 @@ export function useInstantMode() {
       } catch {}
       audioCtxRef.current = null;
     }
-    pendingTextRef.current = "";
     connectingRef.current = false;
     setupDoneRef.current = false;
     setIsConnecting(false);
@@ -164,6 +128,14 @@ export function useInstantMode() {
       return;
     }
 
+    // Log non-audio messages for debugging transcript fields
+    const hasAudio = msg.serverContent?.modelTurn?.parts?.some(
+      (p) => p.inlineData
+    );
+    if (!hasAudio) {
+      console.log("[Gemini] msg:", JSON.stringify(msg).slice(0, 500));
+    }
+
     if (msg.serverContent) {
       const { modelTurn, turnComplete, interrupted } = msg.serverContent;
 
@@ -173,55 +145,44 @@ export function useInstantMode() {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
           }
-          // Collect non-thought text as fallback transcript
-          if (part.text && !part.thought) {
-            pendingTextRef.current += part.text;
-          }
         }
       }
 
-      // Output audio transcription — add directly to transcript
-      // (may arrive before, during, or after turnComplete)
-      if (msg.serverContent.outputTranscript) {
-        const chunk = msg.serverContent.outputTranscript;
-        // Clear part.text fallback since we have real transcription
-        pendingTextRef.current = "";
+      // Output audio transcription (try both field names)
+      const outputText =
+        msg.serverContent.outputTranscript ??
+        msg.serverContent.outputTranscription?.text;
+      if (outputText) {
         setTranscript((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.role === "model") {
             return [
               ...prev.slice(0, -1),
-              { ...last, text: last.text + chunk },
+              { ...last, text: last.text + outputText },
             ];
           }
-          return [...prev, { role: "model", text: chunk }];
+          return [...prev, { role: "model", text: outputText }];
         });
       }
 
       if (turnComplete) {
         setIsAISpeaking(false);
-        // Fallback: use filtered part.text only if no outputTranscript arrived
-        if (pendingTextRef.current) {
-          const cleaned = cleanTranscriptText(pendingTextRef.current);
-          pendingTextRef.current = "";
-          if (cleaned) {
-            setTranscript((prev) => [...prev, { role: "model", text: cleaned }]);
-          }
-        }
       }
 
       if (interrupted) {
         setIsAISpeaking(false);
         clearPlayback();
-        pendingTextRef.current = "";
       }
     }
 
-    // User speech transcript
-    if (msg.serverContent?.inputTranscript) {
+    // User speech transcript (try both field names)
+    const inputText =
+      msg.serverContent?.inputTranscript ??
+      msg.serverContent?.inputTranscription?.text;
+    if (inputText) {
       setTranscript((prev) => [
         ...prev,
-        { role: "user", text: msg.serverContent.inputTranscript },
+        { role: "user", text: inputText },
       ]);
     }
   };
@@ -302,8 +263,6 @@ export function useInstantMode() {
     setTranscript([]);
     setSessionDuration(0);
     setIsAISpeaking(false);
-    pendingTextRef.current = "";
-
     try {
       const configRes = await fetch("/api/gemini-session", {
         method: "POST",
