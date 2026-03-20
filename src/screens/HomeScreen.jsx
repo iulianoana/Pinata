@@ -94,6 +94,7 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
 
       {/* Fixed header */}
       <div ref={headerRef} className="safe-top" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0" }}>
+       <div className="app-header-inner">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3 }}>Hola, {displayName}</h1>
@@ -165,13 +166,14 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
             boxShadow: "none",
           }}>✨ Hablar</button>
         </div>
+       </div>
       </div>
 
       {/* Spacer for fixed header */}
       <div style={{ height: headerH }} />
 
       {/* Tab content */}
-      <div style={{ padding: "0 16px 32px", maxWidth: 520, margin: "0 auto", width: "100%" }}>
+      <div className="app-container" style={{ padding: "0 16px 32px" }}>
         {activeTab === "quizzes" ? (
           <div key="quizzes" className="fade-in">
             {loading ? (
@@ -187,7 +189,7 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
                 <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>Upload your first quiz to get started!</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="quiz-grid">
                 {quizzes.map((q) => {
                   const title = q.data.meta?.title || "Quiz";
                   const unit = q.data.meta?.unit;
@@ -314,7 +316,7 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
                 <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>Complete a quiz to see your history!</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className="history-list">
                 {cloudHistory.map((r) => (
                   <div key={r.id} className="fade-in" onClick={() => navigate("/history/view", { state: { cloudRecord: r } })} style={{
                     background: C.card, borderRadius: 14, padding: "14px 16px",

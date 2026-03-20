@@ -36,6 +36,19 @@ export const injectStyles = () => {
     @keyframes progressGrow { from { width: 0%; } }
     .safe-top { padding-top: max(16px, env(safe-area-inset-top, 16px)) !important; }
     .safe-top-fixed { top: env(safe-area-inset-top, 12px) !important; }
+    .app-container { max-width: 520px; margin: 0 auto; width: 100%; }
+    .app-header-inner { max-width: 520px; margin: 0 auto; }
+    .quiz-grid { display: flex; flex-direction: column; gap: 12px; }
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    @media (min-width: 768px) {
+      .app-container { max-width: 700px; }
+      .app-header-inner { max-width: 700px; }
+      .quiz-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    }
+    @media (min-width: 1200px) {
+      .app-container { max-width: 860px; }
+      .app-header-inner { max-width: 860px; }
+    }
   `;
   document.head.appendChild(s);
 };

@@ -156,7 +156,7 @@ export default function ResultsRoute({ session }) {
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg,
         padding: "0 20px", borderBottom: `1px solid ${C.border}`,
       }}>
-        <div style={{ maxWidth: 520, margin: "0 auto" }}>
+        <div className="app-header-inner">
           <button onClick={() => navigate("/")} style={{
             background: "none", border: "none", color: C.muted, fontSize: 14, fontWeight: 700,
             cursor: "pointer", padding: "12px 4px", fontFamily: "'Nunito', sans-serif",
@@ -175,7 +175,7 @@ export default function ResultsRoute({ session }) {
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
       {showConfetti && <Confetti />}
 
-      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px 32px", paddingTop: "calc(45px + max(16px, env(safe-area-inset-top, 16px)))" }}>
+      <div className="app-container" style={{ padding: "0 20px 32px", paddingTop: "calc(45px + max(16px, env(safe-area-inset-top, 16px)))" }}>
         {/* Score card */}
         <div style={{
           background: C.card, borderRadius: 16, padding: "32px 24px 24px", textAlign: "center",
