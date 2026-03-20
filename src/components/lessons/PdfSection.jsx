@@ -190,7 +190,7 @@ export default function PdfSection({ pdfInfo, isLoading, uploadProgress, onUploa
             {/* PDF iframe */}
             <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
               <iframe
-                src={pdfBlobUrl + "#toolbar=0&navpanes=0"}
+                src={pdfBlobUrl + "#navpanes=0"}
                 title="Course PDF"
                 style={{
                   position: "absolute", top: 0, left: 0,
