@@ -80,11 +80,33 @@ const mdComponents = {
 
 export default function LessonReader({ lesson, weekContext, onBack }) {
   return (
-    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
-      {/* Mobile: full-screen overlay. Desktop: content area replacement. */}
-      <div className="lesson-reader-container" style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 60px" }}>
-        {/* Back button */}
+    <div style={{ minHeight: "100vh", background: C.card }}>
+      {/* Desktop header — matches quiz-screen pattern */}
+      <div className="quiz-desktop-header" style={{
+        display: "none", alignItems: "center", gap: 12,
+        padding: "16px 40px 12px",
+      }}>
         <button onClick={onBack} style={{
+          background: "none", border: `1.5px solid ${C.border}`, borderRadius: 10,
+          color: C.muted, cursor: "pointer", padding: "6px 8px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = C.accent; e.currentTarget.style.borderColor = C.accent; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <span style={{ fontSize: 15, fontWeight: 800, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {lesson.title}
+        </span>
+      </div>
+
+      {/* Content area */}
+      <div className="app-container lesson-reader-container" style={{ padding: "0 20px 60px" }}>
+        {/* Mobile back button — hidden on desktop */}
+        <button className="quiz-home-btn" onClick={onBack} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "none", border: "none", color: C.accent, fontWeight: 700,
           fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif",

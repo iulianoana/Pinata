@@ -24,13 +24,14 @@ export default function LessonsScreen({ session }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [headerH, setHeaderH] = useState(0);
 
-  const headerRef = useRef(null);
-  useEffect(() => {
-    if (!headerRef.current) return;
+  const roRef = useRef(null);
+  const headerCallbackRef = (el) => {
+    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
+    if (!el) return;
     const ro = new ResizeObserver(([e]) => setHeaderH(e.contentRect.height + parseFloat(getComputedStyle(e.target).paddingTop) + parseFloat(getComputedStyle(e.target).paddingBottom)));
-    ro.observe(headerRef.current);
-    return () => ro.disconnect();
-  }, []);
+    ro.observe(el);
+    roRef.current = ro;
+  };
 
   useEffect(() => { loadWeeks(); }, []);
 
@@ -166,7 +167,7 @@ export default function LessonsScreen({ session }) {
   return (
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
       {/* Fixed header */}
-      <div ref={headerRef} className="safe-top desktop-main desktop-header-fixed" style={{
+      <div ref={headerCallbackRef} className="safe-top desktop-main desktop-header-fixed" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
         background: C.bg, padding: "16px 20px 0",
       }}>
@@ -249,7 +250,7 @@ export default function LessonsScreen({ session }) {
                 </p>
               </div>
             ) : (
-              <div className="lessons-accordion" style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 720 }}>
+              <div className="lessons-accordion" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {weeks.map((week) => (
                   <WeekCard
                     key={week.id}

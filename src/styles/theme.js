@@ -76,8 +76,7 @@ export const injectStyles = () => {
       .fab-new-week { display: none !important; }
       .new-week-btn-desktop { display: flex !important; }
       .lesson-delete-hover { display: inline !important; }
-      .lessons-accordion { max-width: 720px; }
-      .lesson-reader-container { padding-top: 8px !important; }
+      .lesson-reader-container { padding-top: 8px !important; max-width: 860px; }
       .lessons-footer-text { display: none; }
     }
     @media (min-width: 1400px) {
