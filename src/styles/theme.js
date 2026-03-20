@@ -53,6 +53,11 @@ export const injectStyles = () => {
     .desktop-sidebar { display: none !important; }
     .desktop-in-progress-pill { display: none !important; }
     .add-quiz-btn-desktop { display: none; }
+    /* Lessons feature */
+    .new-week-btn-desktop { display: none !important; }
+    .fab-new-week { display: flex; }
+    .lesson-delete-hover { display: none; }
+    mark { background: #B0E0D8; color: #1A2F2B; padding: 1px 2px; border-radius: 3px; }
     @media (min-width: 1024px) {
       .desktop-sidebar { display: flex !important; }
       .desktop-main { margin-left: 220px; max-width: calc(100% - 220px); }
@@ -67,6 +72,13 @@ export const injectStyles = () => {
       .add-quiz-btn-desktop { display: flex !important; }
       .quiz-home-btn { display: none !important; }
       .quiz-desktop-header { display: flex !important; }
+      /* Lessons desktop overrides */
+      .fab-new-week { display: none !important; }
+      .new-week-btn-desktop { display: flex !important; }
+      .lesson-delete-hover { display: inline !important; }
+      .lessons-accordion { max-width: 720px; }
+      .lesson-reader-container { padding-top: 8px !important; }
+      .lessons-footer-text { display: none; }
     }
     @media (min-width: 1400px) {
       .app-container { padding-left: 60px !important; padding-right: 60px !important; }

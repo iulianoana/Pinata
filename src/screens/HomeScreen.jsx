@@ -166,22 +166,25 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
 
         {/* Tab bar — pill style */}
         <div className="mobile-tab-bar" style={{ display: "flex", borderRadius: 12, background: C.accentLight, padding: 4, marginBottom: 16 }}>
-          {["Quizzes", "History"].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab.toLowerCase())} style={{
-              flex: 1, padding: "8px 0", background: activeTab === tab.toLowerCase() ? C.card : "transparent",
-              border: "none", borderRadius: 10, color: activeTab === tab.toLowerCase() ? C.accentHover : C.muted,
+          {[
+            { label: "Quizzes", id: "quizzes", local: true },
+            { label: "Lessons", id: "lessons", to: "/lessons" },
+            { label: "History", id: "history", local: true },
+            { label: "Hablar", id: "hablar", to: "/dialog" },
+          ].map((tab) => (
+            <button key={tab.id} onClick={() => {
+              if (tab.to) navigate(tab.to);
+              else setActiveTab(tab.id);
+            }} style={{
+              flex: 1, padding: "8px 0",
+              background: !tab.to && activeTab === tab.id ? C.card : "transparent",
+              border: "none", borderRadius: 10,
+              color: !tab.to && activeTab === tab.id ? C.accentHover : C.muted,
               fontWeight: 700, fontSize: 13, cursor: "pointer",
               fontFamily: "'Nunito', sans-serif", transition: "all 0.15s",
-              boxShadow: activeTab === tab.toLowerCase() ? "0 1px 3px rgba(0,60,50,0.08)" : "none",
-            }}>{tab}</button>
+              boxShadow: !tab.to && activeTab === tab.id ? "0 1px 3px rgba(0,60,50,0.08)" : "none",
+            }}>{tab.label}</button>
           ))}
-          <button onClick={() => navigate("/dialog")} style={{
-            flex: 1, padding: "8px 0", background: "transparent",
-            border: "none", borderRadius: 10, color: C.muted,
-            fontWeight: 700, fontSize: 13, cursor: "pointer",
-            fontFamily: "'Nunito', sans-serif", transition: "all 0.15s",
-            boxShadow: "none",
-          }}>✨ Hablar</button>
         </div>
        </div>
       </div>

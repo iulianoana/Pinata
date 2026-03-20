@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase.js";
 
 const NAV_ITEMS = [
   { id: "quizzes", label: "Quizzes", section: "learn", icon: "monitor" },
+  { id: "lessons", label: "Lessons", section: "learn", icon: "bookOpen" },
   { id: "history", label: "History", section: "learn", icon: "clock" },
   { id: "hablar", label: "Hablar", section: "learn", icon: "mic", badge: "beta" },
   { id: "prompts", label: "Prompts", section: "tools", icon: "file" },
@@ -43,6 +44,11 @@ const ICONS = {
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   ),
+  bookOpen: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  ),
   settings: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -64,6 +70,7 @@ export default function DesktopSidebar({ session }) {
 
   const getActiveId = () => {
     if (location.pathname === "/dialog") return "hablar";
+    if (location.pathname === "/lessons") return "lessons";
     if (location.pathname === "/history/view") return "history";
     if (location.pathname === "/" && new URLSearchParams(location.search).get("tab") === "history") return "history";
     return "quizzes";
@@ -73,6 +80,7 @@ export default function DesktopSidebar({ session }) {
 
   const handleClick = (id) => {
     if (id === "hablar") { navigate("/dialog"); return; }
+    if (id === "lessons") { navigate("/lessons"); return; }
     if (id === "history") { navigate("/?tab=history"); return; }
     if (id === "quizzes") { navigate("/"); return; }
     console.log(`[Sidebar] ${id} — coming soon`);
@@ -126,12 +134,11 @@ export default function DesktopSidebar({ session }) {
     }}>
       {/* Logo */}
       <div style={{ padding: "20px 16px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, background: C.accent,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-        }}>
-          🪅
-        </div>
+        <img
+          src="/icons/logo.png"
+          alt="Piñata"
+          style={{ width: 32, height: 32, borderRadius: 8 }}
+        />
         <span style={{ fontSize: 18, fontWeight: 900, color: C.text }}>Piñata</span>
       </div>
 
