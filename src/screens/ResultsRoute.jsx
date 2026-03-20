@@ -152,7 +152,7 @@ export default function ResultsRoute({ session }) {
   return (
     <>
       {/* Fixed header — must be outside fade-in to avoid transform breaking position:fixed */}
-      <div className="safe-top" style={{
+      <div className="safe-top desktop-header-fixed" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg,
         padding: "0 20px", borderBottom: `1px solid ${C.border}`,
       }}>
@@ -172,7 +172,7 @@ export default function ResultsRoute({ session }) {
         </div>
       </div>
 
-    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+    <div className="fade-in desktop-main" style={{ minHeight: "100vh", background: C.bg }}>
       {showConfetti && <Confetti />}
 
       <div className="app-container" style={{ padding: "0 20px 32px", paddingTop: "calc(45px + max(16px, env(safe-area-inset-top, 16px)))" }}>

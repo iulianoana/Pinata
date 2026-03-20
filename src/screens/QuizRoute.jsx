@@ -76,7 +76,7 @@ export default function QuizRoute({ saveAttempt, session }) {
 
   if (loadError) return <Navigate to="/" replace />;
   if (!data) return (
-    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div className="desktop-main" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <p style={{ color: C.muted, fontSize: 16, fontWeight: 600 }}>Loading quiz...</p>
     </div>
   );
@@ -204,7 +204,7 @@ export default function QuizRoute({ saveAttempt, session }) {
   const tc = typeColors[q.type] || { bg: C.accentLight, text: C.accentHover };
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: C.bg }}>
+    <div className="desktop-main" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: C.bg }}>
       <ConfirmModal open={showLeaveConfirm}
         title="Leave quiz?" message="Your progress is saved. You can resume later."
         confirmLabel="Leave" cancelLabel="Stay"

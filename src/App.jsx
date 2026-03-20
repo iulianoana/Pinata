@@ -9,6 +9,7 @@ import HomeScreen from "./screens/HomeScreen";
 import QuizRoute from "./screens/QuizRoute";
 import ResultsRoute from "./screens/ResultsRoute";
 import DialogScreen from "./screens/DialogScreen";
+import DesktopSidebar from "./components/DesktopSidebar";
 
 function HomeRoute({ history, session }) {
   const navigate = useNavigate();
@@ -74,6 +75,7 @@ export default function App() {
           Unsynced ({pendingCount})
         </div>
       )}
+      {session && <DesktopSidebar session={session} />}
       <Routes>
         <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginScreen />} />
         <Route path="/" element={session ? <HomeRoute history={history} session={session} /> : <Navigate to="/login" replace />} />

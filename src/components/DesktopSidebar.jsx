@@ -1,4 +1,7 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { C } from "../styles/theme";
+import { supabase } from "../lib/supabase.js";
 
 const NAV_ITEMS = [
   { id: "quizzes", label: "Quizzes", section: "learn", icon: "monitor" },
@@ -47,22 +50,31 @@ const ICONS = {
   ),
 };
 
-export default function DesktopSidebar({ activeTab, onTabChange, onNavigateDialog, inProgressCount }) {
-  const isActive = (id) => {
-    if (id === "hablar") return false; // Hablar navigates away
-    return activeTab === id;
+export default function DesktopSidebar({ session }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [inProgressCount, setInProgressCount] = useState(0);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    supabase.from("quiz_progress").select("quiz_title")
+      .eq("user_id", session.user.id).eq("status", "in_progress")
+      .then(({ data }) => { if (data) setInProgressCount(data.length); });
+  }, [session?.user?.id]);
+
+  const getActiveId = () => {
+    if (location.pathname === "/dialog") return "hablar";
+    if (location.pathname === "/history/view") return "history";
+    if (location.pathname === "/" && new URLSearchParams(location.search).get("tab") === "history") return "history";
+    return "quizzes";
   };
 
+  const isActive = (id) => getActiveId() === id;
+
   const handleClick = (id) => {
-    if (id === "hablar") {
-      onNavigateDialog();
-      return;
-    }
-    if (id === "quizzes" || id === "history") {
-      onTabChange(id);
-      return;
-    }
-    // Future features — no-op
+    if (id === "hablar") { navigate("/dialog"); return; }
+    if (id === "history") { navigate("/?tab=history"); return; }
+    if (id === "quizzes") { navigate("/"); return; }
     console.log(`[Sidebar] ${id} — coming soon`);
   };
 

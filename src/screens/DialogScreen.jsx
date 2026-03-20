@@ -174,7 +174,7 @@ export default function DialogScreen({ session }) {
 
   return (
     <div
-      className="fade-in"
+      className="fade-in desktop-main"
       style={{
         minHeight: "100vh",
         background: C.bg,
@@ -184,7 +184,7 @@ export default function DialogScreen({ session }) {
     >
       {/* Header */}
       <div
-        className="safe-top"
+        className="safe-top desktop-header-fixed"
         style={{
           position: "fixed",
           top: 0,

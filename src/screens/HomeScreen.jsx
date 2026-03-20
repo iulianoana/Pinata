@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { C } from "../styles/theme";
 import { supabase } from "../lib/supabase.js";
 import { relativeTime, computeStreak } from "../utils/helpers";
@@ -7,11 +7,11 @@ import SkeletonCard from "../components/SkeletonCard";
 import MiniScoreCircle from "../components/MiniScoreCircle";
 import AddQuizSheet from "../components/AddQuizSheet";
 import ConfirmModal from "../components/ConfirmModal";
-import DesktopSidebar from "../components/DesktopSidebar";
 
 export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, session }) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("quizzes");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "history" ? "history" : "quizzes");
   const [showAddQuiz, setShowAddQuiz] = useState(false);
   const [stats, setStats] = useState(null);
   const [cloudHistory, setCloudHistory] = useState([]);
@@ -21,6 +21,12 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
   const [pullDistance, setPullDistance] = useState(0);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [headerH, setHeaderH] = useState(0);
+  // Sync activeTab from URL search params (desktop sidebar navigation)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    setActiveTab(tab === "history" ? "history" : "quizzes");
+  }, [searchParams]);
+
   const headerRef = useRef(null);
   useEffect(() => {
     if (!headerRef.current) return;
@@ -88,12 +94,6 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
   return (
     <div className="fade-in" onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
       style={{ minHeight: "100vh", background: C.bg }}>
-      <DesktopSidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onNavigateDialog={() => navigate("/dialog")}
-        inProgressCount={inProgressCount}
-      />
       {pullDistance > 0 && (
         <div style={{ textAlign: "center", padding: `${pullDistance * 0.3}px 0`, color: C.muted, fontSize: 13, fontWeight: 600, transition: "padding 0.1s" }}>
           <span style={{ display: "inline-block", transform: `rotate(${pullDistance > 50 ? 180 : 0}deg)`, transition: "transform 0.2s" }}>↓</span>
