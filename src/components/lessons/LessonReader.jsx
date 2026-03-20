@@ -103,6 +103,7 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
   const [loadingPdfView, setLoadingPdfView] = useState(false);
   const [panelWidth, setPanelWidth] = useState(() => getSavedPanelWidth());
   const [isResizing, setIsResizing] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
   const bodyRef = useRef(null);
   const panelWidthRef = useRef(panelWidth);
 
@@ -139,6 +140,7 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
 
     const onUp = () => {
       setIsResizing(false);
+      setIframeKey((k) => k + 1); // force iframe remount so PDF viewer recalculates zoom
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
       document.removeEventListener("mousemove", onMove);
@@ -270,6 +272,7 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
             <div className="skeleton" style={{ flex: 1, borderRadius: 12, minHeight: 300 }} />
           ) : pdfBlobUrl ? (
             <iframe
+              key={iframeKey}
               src={pdfBlobUrl + "#navpanes=0"}
               title="Course PDF"
               style={{
