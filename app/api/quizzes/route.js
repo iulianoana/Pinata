@@ -27,7 +27,7 @@ export async function GET(req) {
     .select(`
       id, title, description, question_count, source, created_at, updated_at,
       lesson_id, week_id,
-      lessons:lesson_id (id, title),
+      lessons:lesson_id (id, title, week_id),
       weeks:week_id (id, title, week_number),
       quiz_progress (status, current_index, answers),
       quiz_results (percentage, created_at)

@@ -17,7 +17,7 @@ function stripMarkdown(md) {
     .slice(0, 60);
 }
 
-export default function LessonRow({ lesson, onSelect, onDelete }) {
+export default function LessonRow({ lesson, onSelect, onDelete, quizCount = 0 }) {
   const [hovered, setHovered] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
@@ -109,9 +109,19 @@ export default function LessonRow({ lesson, onSelect, onDelete }) {
               {preview}
             </div>
           )}
-          {lesson.pdf_path && (
-            <div style={{ marginTop: 4 }}>
-              <PdfBadge isCached={pdfCached} />
+          {(lesson.pdf_path || quizCount > 0) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+              {lesson.pdf_path && <PdfBadge isCached={pdfCached} />}
+              {quizCount > 0 && (
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 3,
+                  padding: "2px 8px", borderRadius: 6,
+                  background: "#EDE9FE", color: "#8B5CF6",
+                  fontSize: 11, fontWeight: 800, flexShrink: 0,
+                }}>
+                  🧩 {quizCount}
+                </span>
+              )}
             </div>
           )}
         </div>

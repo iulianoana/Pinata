@@ -9,6 +9,7 @@ export default function LessonRoute() {
   const navigate = useNavigate();
   const [lesson, setLesson] = useState(null);
   const [weekContext, setWeekContext] = useState("");
+  const [week, setWeek] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -19,7 +20,8 @@ export default function LessonRoute() {
         if (cancelled) return;
         setLesson(data);
         if (data.weeks) {
-          setWeekContext(`Week ${data.weeks.week_number} · ${data.weeks.title || `Week ${data.weeks.week_number}`}`);
+          setWeekContext(`Week ${data.weeks.week_number} \u00b7 ${data.weeks.title || `Week ${data.weeks.week_number}`}`);
+          setWeek(data.weeks);
         }
       } catch {
         if (!cancelled) setError(true);
@@ -56,6 +58,7 @@ export default function LessonRoute() {
       <LessonReader
         lesson={lesson}
         weekContext={weekContext}
+        week={week}
         onBack={() => navigate("/lessons")}
       />
     </div>

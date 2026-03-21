@@ -3,6 +3,8 @@ export const C = {
   accentHover: "#008F7E", text: "#1A2F2B", muted: "#5E8078", success: "#00C48C",
   successLight: "#E0F8F0", error: "#FF6584", errorLight: "#FFF0F3",
   border: "#D4F0EB", inputBg: "#F0FAF8", overlay: "rgba(26, 47, 43, 0.45)",
+  quiz: "#8B5CF6", quizLight: "#EDE9FE", quizHover: "#7C3AED",
+  unitQuiz: "#3B82F6", unitQuizLight: "#DBEAFE",
 };
 
 export const injectStyles = () => {
@@ -86,6 +88,8 @@ export const injectStyles = () => {
       .lesson-reader-scroll { flex: 1; overflow-y: auto; min-width: 0; }
       .pdf-side-panel-desktop { display: block !important; flex-shrink: 0; }
       .pdf-section-inline { display: none !important; }
+      .quiz-sidebar-desktop { display: flex !important; flex-direction: column; flex-shrink: 0; width: 320px; overflow-y: auto; border-left: 1px solid #D4F0EB; background: #FFFFFF; }
+      .quiz-section-mobile { display: none !important; }
       .lesson-reader-panel-open.lesson-reader-container { max-width: 100% !important; }
       .lessons-footer-text { display: none; }
     }

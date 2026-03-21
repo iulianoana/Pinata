@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../styles/theme";
-import { fetchWeeks, createWeek, deleteWeek as apiDeleteWeek, createLesson, deleteLesson as apiDeleteLesson } from "../lib/api";
+import { fetchWeeks, createWeek, deleteWeek as apiDeleteWeek, createLesson, deleteLesson as apiDeleteLesson, fetchQuizzes } from "../lib/api";
 import WeekCard from "../components/lessons/WeekCard";
 import LessonSearch from "../components/lessons/LessonSearch";
 import AddWeekModal from "../components/lessons/AddWeekModal";
 import AddLessonModal from "../components/lessons/AddLessonModal";
+import AddQuizModal from "../components/quizzes/AddQuizModal";
 import ConfirmModal from "../components/ConfirmModal";
 
 export default function LessonsScreen({ session }) {
@@ -19,6 +20,8 @@ export default function LessonsScreen({ session }) {
   const [searchActive, setSearchActive] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [headerH, setHeaderH] = useState(0);
+  const [quizCounts, setQuizCounts] = useState({ perLesson: {}, weekTotal: {} });
+  const [addQuizWeek, setAddQuizWeek] = useState(null); // week object for unit quiz modal
 
   const roRef = useRef(null);
   const headerCallbackRef = (el) => {
@@ -29,7 +32,7 @@ export default function LessonsScreen({ session }) {
     roRef.current = ro;
   };
 
-  useEffect(() => { loadWeeks(); }, []);
+  useEffect(() => { loadWeeks(); loadQuizCounts(); }, []);
 
   const loadWeeks = async () => {
     try {
@@ -39,6 +42,28 @@ export default function LessonsScreen({ session }) {
       console.error("Failed to load weeks:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadQuizCounts = async () => {
+    try {
+      const quizzes = await fetchQuizzes();
+      const perLesson = {};
+      const weekTotal = {};
+      quizzes.forEach((q) => {
+        if (q.lesson_id) {
+          perLesson[q.lesson_id] = (perLesson[q.lesson_id] || 0) + 1;
+          // Also count toward the parent week total
+          const weekId = q.lesson?.week_id;
+          if (weekId) weekTotal[weekId] = (weekTotal[weekId] || 0) + 1;
+        }
+        if (q.week_id) {
+          weekTotal[q.week_id] = (weekTotal[q.week_id] || 0) + 1;
+        }
+      });
+      setQuizCounts({ perLesson, weekTotal });
+    } catch (e) {
+      console.error("Failed to load quiz counts:", e);
     }
   };
 
@@ -89,11 +114,13 @@ export default function LessonsScreen({ session }) {
           return next;
         });
         await loadWeeks();
+        loadQuizCounts();
       } else {
         await apiDeleteLesson(deleteConfirm.item.id);
         const weekId = deleteConfirm.item._weekId;
         if (weekId) bumpRefreshKey(weekId);
         await loadWeeks();
+        loadQuizCounts();
       }
     } catch (e) {
       console.error("Delete failed:", e);
@@ -123,6 +150,14 @@ export default function LessonsScreen({ session }) {
 
   const handleSearchSelect = (result) => {
     navigate(`/lesson/${result.id}`);
+  };
+
+  const handleAddUnitQuiz = (week) => {
+    setAddQuizWeek(week);
+  };
+
+  const handleQuizAdded = () => {
+    loadQuizCounts();
   };
 
   return (
@@ -226,6 +261,8 @@ export default function LessonsScreen({ session }) {
                     }}
                     onDeleteLesson={(lesson) => handleDeleteLesson(lesson, week.id)}
                     onDeleteWeek={handleDeleteWeek}
+                    quizCounts={quizCounts}
+                    onAddUnitQuiz={handleAddUnitQuiz}
                   />
                 ))}
               </div>
@@ -272,6 +309,19 @@ export default function LessonsScreen({ session }) {
         onCreate={handleAddLesson}
         weekLabel={addLessonWeek ? `Week ${addLessonWeek.week_number} · ${addLessonWeek.title || `Week ${addLessonWeek.week_number}`}` : ""}
       />
+
+      {addQuizWeek && (
+        <AddQuizModal
+          open={true}
+          onClose={() => setAddQuizWeek(null)}
+          onSuccess={handleQuizAdded}
+          context={{
+            type: "week",
+            weekId: addQuizWeek.id,
+            weekTitle: `Unit #${addQuizWeek.week_number}: ${addQuizWeek.title || `Week ${addQuizWeek.week_number}`}`,
+          }}
+        />
+      )}
 
       <ConfirmModal
         open={deleteConfirm !== null}

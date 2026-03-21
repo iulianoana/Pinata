@@ -5,7 +5,7 @@ import { C } from "../../styles/theme";
 import LessonRow from "./LessonRow";
 import { fetchLessons, reorderLessons } from "../../lib/api";
 
-export default function WeekCard({ week, expanded, refreshKey, onToggle, onSelectLesson, onAddLesson, onDeleteLesson, onDeleteWeek }) {
+export default function WeekCard({ week, expanded, refreshKey, onToggle, onSelectLesson, onAddLesson, onDeleteLesson, onDeleteWeek, quizCounts, onAddUnitQuiz }) {
   const [lessons, setLessons] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -97,13 +97,16 @@ export default function WeekCard({ week, expanded, refreshKey, onToggle, onSelec
           {week.week_number}
         </div>
 
-        {/* Title + lesson count */}
+        {/* Title + lesson count + quiz count */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {week.title || `Week ${week.week_number}`}
           </div>
           <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 2 }}>
             {week.lesson_count} lesson{week.lesson_count !== 1 ? "s" : ""}
+            {(quizCounts?.weekTotal?.[week.id] || 0) > 0 && (
+              <> · {quizCounts.weekTotal[week.id]} quiz{quizCounts.weekTotal[week.id] !== 1 ? "zes" : ""}</>
+            )}
           </div>
         </div>
 
@@ -146,6 +149,7 @@ export default function WeekCard({ week, expanded, refreshKey, onToggle, onSelec
                       lesson={lesson}
                       onSelect={onSelectLesson}
                       onDelete={onDeleteLesson}
+                      quizCount={quizCounts?.perLesson?.[lesson.id] || 0}
                     />
                   ))}
                 </div>
@@ -157,18 +161,34 @@ export default function WeekCard({ week, expanded, refreshKey, onToggle, onSelec
             </div>
           ) : null}
 
-          {/* Add lesson button */}
-          <button onClick={() => onAddLesson(week)} style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            width: "100%", padding: "12px", border: "none", borderTop: `1px solid ${C.border}`,
-            background: "transparent", color: C.accent, fontWeight: 700, fontSize: 13,
-            cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-            transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = C.accentLight)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-            + Add lesson
-          </button>
+          {/* Footer actions */}
+          <div style={{ display: "flex", borderTop: `1px solid ${C.border}` }}>
+            <button onClick={() => onAddLesson(week)} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              flex: 1, padding: "12px", border: "none",
+              background: "transparent", color: C.accent, fontWeight: 700, fontSize: 13,
+              cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = C.accentLight)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              + Add lesson
+            </button>
+            {onAddUnitQuiz && (
+              <button onClick={() => onAddUnitQuiz(week)} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                flex: 1, padding: "12px", border: "none",
+                borderLeft: `1px solid ${C.border}`,
+                background: "transparent", color: "#8B5CF6", fontWeight: 700, fontSize: 13,
+                cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#EDE9FE")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                + Add unit quiz
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

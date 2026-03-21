@@ -1,9 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { C } from "../../styles/theme";
 import PdfSection from "./PdfSection";
 import useLessonPdf from "../../useLessonPdf";
+import QuizMiniCard from "../quizzes/QuizMiniCard";
+import AddQuizModal from "../quizzes/AddQuizModal";
+import AddQuizSheet from "../AddQuizSheet";
+import { fetchQuizzes } from "../../lib/api";
+import { relativeTime } from "../../utils/helpers";
 
 const mdComponents = {
   h1: ({ children }) => (
@@ -96,7 +102,8 @@ function getSavedPanelWidth() {
   try { const v = localStorage.getItem(PANEL_STORAGE_KEY); return v ? Number(v) : null; } catch { return null; }
 }
 
-export default function LessonReader({ lesson, weekContext, onBack }) {
+export default function LessonReader({ lesson, weekContext, week, onBack }) {
+  const navigate = useNavigate();
   const { pdfInfo, isLoading: pdfLoading, uploadProgress, uploadPdf, viewPdf, deletePdf } = useLessonPdf(lesson.id);
   const [pdfPanelOpen, setPdfPanelOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
@@ -112,7 +119,41 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
   const [panelDragging, setPanelDragging] = useState(false);
   const [panelDeleting, setPanelDeleting] = useState(false);
 
+  // Quiz state
+  const [quizzes, setQuizzes] = useState([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(true);
+  const [showAddQuizModal, setShowAddQuizModal] = useState(false); // desktop
+  const [showAddQuizSheet, setShowAddQuizSheet] = useState(false); // mobile
+
   useEffect(() => { panelWidthRef.current = panelWidth; }, [panelWidth]);
+
+  // Fetch quizzes for this lesson
+  const loadQuizzes = useCallback(async () => {
+    try {
+      const data = await fetchQuizzes({ lesson_id: lesson.id });
+      setQuizzes(data);
+    } catch (e) {
+      console.error("Failed to load quizzes:", e);
+    } finally {
+      setQuizzesLoading(false);
+    }
+  }, [lesson.id]);
+
+  useEffect(() => { loadQuizzes(); }, [loadQuizzes]);
+
+  // Aggregated quiz stats
+  const quizStats = useMemo(() => {
+    if (quizzes.length === 0) return null;
+    const attempted = quizzes.filter((q) => q.attempt_count > 0);
+    if (attempted.length === 0) return { bestScore: null, avgScore: null, totalAttempts: 0, lastPracticed: null };
+    const bestScore = Math.max(...attempted.map((q) => q.best_score));
+    const avgScore = Math.round(attempted.reduce((s, q) => s + (q.avg_score || 0), 0) / attempted.length);
+    const totalAttempts = attempted.reduce((s, q) => s + q.attempt_count, 0);
+    const lastPracticed = attempted.reduce((latest, q) =>
+      q.last_attempted_at && (!latest || q.last_attempted_at > latest) ? q.last_attempted_at : latest
+    , null);
+    return { bestScore, avgScore, totalAttempts, lastPracticed };
+  }, [quizzes]);
 
   // Compute effective panel width (px). Default to ~50% of body.
   const getEffectiveWidth = useCallback(() => {
@@ -202,6 +243,108 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
     } finally {
       setPanelDeleting(false);
     }
+  };
+
+  const handleQuizAdded = () => {
+    setQuizzesLoading(true);
+    loadQuizzes();
+  };
+
+  const handleSelectQuiz = (quiz) => {
+    navigate(`/quiz/${quiz.id}`);
+  };
+
+  const addQuizContext = useMemo(() => ({
+    type: "lesson",
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    weekId: week?.id || null,
+    weekTitle: week ? `Unit #${week.week_number}: ${week.title || `Week ${week.week_number}`}` : null,
+  }), [lesson.id, lesson.title, week]);
+
+  // Quiz sidebar content (shared between desktop sidebar and mobile section)
+  const renderQuizList = (compact = false) => (
+    <>
+      {quizzesLoading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="skeleton" style={{ height: 60, borderRadius: 12 }} />
+          <div className="skeleton" style={{ height: 60, borderRadius: 12 }} />
+        </div>
+      ) : quizzes.length === 0 ? (
+        <p style={{ color: C.muted, fontSize: 13, fontWeight: 600, textAlign: "center", padding: "12px 0" }}>
+          No quizzes yet
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {quizzes.map((q) => (
+            <QuizMiniCard key={q.id} quiz={q} onClick={() => handleSelectQuiz(q)} />
+          ))}
+        </div>
+      )}
+
+      {/* Add quiz button */}
+      <button
+        className={compact ? "add-quiz-btn-mobile-inline" : ""}
+        onClick={() => {
+          if (compact) setShowAddQuizSheet(true);
+          else setShowAddQuizModal(true);
+        }}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          width: "100%", padding: compact ? "10px" : "12px", borderRadius: 12,
+          border: "2px dashed #8B5CF6", background: "transparent",
+          color: "#8B5CF6", fontWeight: 700, fontSize: 13,
+          cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+          transition: "all 0.15s", marginTop: 8,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#EDE9FE")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >
+        + Add quiz
+      </button>
+    </>
+  );
+
+  // Lesson Progress card
+  const renderProgressCard = () => {
+    if (!quizStats || quizStats.bestScore === null) return null;
+    return (
+      <div style={{
+        background: C.card, borderRadius: 14, padding: 20,
+        border: `1px solid ${C.border}`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 16 }}>📊</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Lesson Progress</span>
+        </div>
+
+        {/* Big score */}
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <div style={{ fontSize: 42, fontWeight: 900, color: C.accent, lineHeight: 1 }}>
+            {quizStats.bestScore}%
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 4 }}>Best quiz score</div>
+        </div>
+
+        {/* Stats rows */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
+            <span style={{ color: C.muted }}>Attempts</span>
+            <span style={{ color: C.text, fontWeight: 700 }}>{quizStats.totalAttempts}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
+            <span style={{ color: C.muted }}>Average</span>
+            <span style={{ color: C.text, fontWeight: 700 }}>{quizStats.avgScore}%</span>
+          </div>
+          {quizStats.lastPracticed && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
+              <span style={{ color: C.muted }}>Last practiced</span>
+              <span style={{ color: C.text, fontWeight: 700 }}>{relativeTime(new Date(quizStats.lastPracticed).getTime())}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderPanelContent = () => {
@@ -338,7 +481,7 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
         </button>
       </div>
 
-      {/* Body: content + panel side by side */}
+      {/* Body: content + quiz sidebar + PDF panel */}
       <div className="lesson-reader-body" ref={bodyRef}>
         {/* Main scrollable content */}
         <div className="lesson-reader-scroll">
@@ -385,12 +528,64 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
               />
             </div>
 
+            {/* Quiz Section — mobile only (hidden on desktop via CSS) */}
+            <div className="quiz-section-mobile" style={{ marginBottom: 24 }}>
+              <div style={{
+                background: C.card, borderRadius: 16, padding: 20,
+                border: `1px solid ${C.border}`,
+              }}>
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>🧩</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Quizzes</span>
+                  </div>
+                  {!quizzesLoading && quizzes.length > 0 && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
+                      {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
+                    </span>
+                  )}
+                </div>
+                {renderQuizList(true)}
+              </div>
+            </div>
+
             {/* Markdown body */}
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
               {lesson.markdown_content}
             </ReactMarkdown>
           </div>
         </div>
+
+        {/* Desktop Quiz sidebar — hidden when PDF panel is open */}
+        {!pdfPanelOpen && (
+          <div className="quiz-sidebar-desktop" style={{ display: "none" }}>
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Quizzes card */}
+              <div style={{
+                background: C.card, borderRadius: 14, padding: 20,
+                border: `1px solid ${C.border}`,
+              }}>
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>🧩</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Quizzes</span>
+                  </div>
+                  {!quizzesLoading && quizzes.length > 0 && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
+                      {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
+                    </span>
+                  )}
+                </div>
+                {renderQuizList(false)}
+              </div>
+
+              {/* Lesson Progress card */}
+              {renderProgressCard()}
+            </div>
+          </div>
+        )}
 
         {/* Desktop PDF side panel */}
         <div className="pdf-side-panel-desktop" style={{
@@ -495,6 +690,22 @@ export default function LessonReader({ lesson, weekContext, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Desktop Add Quiz Modal */}
+      <AddQuizModal
+        open={showAddQuizModal}
+        onClose={() => setShowAddQuizModal(false)}
+        onSuccess={handleQuizAdded}
+        context={addQuizContext}
+      />
+
+      {/* Mobile Add Quiz Sheet */}
+      <AddQuizSheet
+        open={showAddQuizSheet}
+        onClose={() => setShowAddQuizSheet(false)}
+        context={addQuizContext}
+        onSuccess={handleQuizAdded}
+      />
     </div>
   );
 }
