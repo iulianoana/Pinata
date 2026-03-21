@@ -12,6 +12,7 @@ import ResultsRoute from "./screens/ResultsRoute";
 import DialogScreen from "./screens/DialogScreen";
 import LessonsScreen from "./screens/LessonsScreen";
 import LessonRoute from "./screens/LessonRoute";
+import CarolinaScreen from "./screens/CarolinaScreen";
 import DesktopSidebar from "./components/DesktopSidebar";
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/lessons" element={session ? <LessonsScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/lesson/:lessonId" element={session ? <LessonRoute /> : <Navigate to="/login" replace />} />
         <Route path="/dialog" element={session ? <DialogScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/carolina" element={session ? <CarolinaScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
