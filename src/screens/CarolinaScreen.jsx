@@ -621,11 +621,22 @@ function ResourcePicker({ availableResources, selectedIds, onToggle, onClose, on
 }
 
 // ─── Chat Input ────────────────────────────────────────────────
-function ChatInput({ value, onChange, onSend, onAttach, disabled }) {
+function ChatInput({ value, onChange, onSend, onAttach, disabled, isMobile }) {
   const textareaRef = useRef(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      setKeyboardOpen(vv.height < window.innerHeight * 0.75);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
       e.preventDefault();
       if (value.trim() && !disabled) onSend();
     }
@@ -645,7 +656,7 @@ function ChatInput({ value, onChange, onSend, onAttach, disabled }) {
     <div style={{
       display: "flex", alignItems: "flex-end", gap: 10,
       padding: "10px 16px",
-      paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))",
+      paddingBottom: keyboardOpen ? 10 : "max(10px, env(safe-area-inset-bottom, 10px))",
       background: "#FFFFFF",
       borderTop: `0.5px solid ${K.bubbleBorder}`,
       flexShrink: 0,
@@ -670,6 +681,7 @@ function ChatInput({ value, onChange, onSend, onAttach, disabled }) {
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Escribe un mensaje..."
+        enterKeyHint={isMobile ? "enter" : "send"}
         rows={1}
         style={{
           flex: 1, resize: "none",
@@ -1406,6 +1418,7 @@ export default function CarolinaScreen({ session }) {
           onSend={handleSend}
           onAttach={() => setShowResourcePicker(!showResourcePicker)}
           disabled={isStreaming}
+          isMobile={isMobile}
         />
       </div>
 
