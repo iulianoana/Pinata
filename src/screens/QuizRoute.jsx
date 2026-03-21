@@ -208,8 +208,7 @@ export default function QuizRoute({ saveAttempt, session }) {
     else tryFinish(updated);
   };
   const handleHomeClick = () => {
-    if (hasAnyAnswers) setShowLeaveConfirm(true);
-    else navigate(backTo);
+    navigate(backTo);
   };
 
   const QComponent = { fill_blank: FillBlank, multiple_choice: MultiChoice, translate: Translate, classify: Classify }[q.type];
@@ -217,10 +216,6 @@ export default function QuizRoute({ saveAttempt, session }) {
 
   return (
     <div className="desktop-main" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: C.bg }}>
-      <ConfirmModal open={showLeaveConfirm}
-        title="Leave quiz?" message="Your progress is saved. You can resume later."
-        confirmLabel="Leave" cancelLabel="Stay"
-        onConfirm={() => navigate(backTo)} onCancel={() => setShowLeaveConfirm(false)} />
       <ConfirmModal open={showFinishConfirm}
         title="Finish quiz?"
         message={`You have ${countUnanswered(pendingFinishAnswers.current || answers)} unanswered question${countUnanswered(pendingFinishAnswers.current || answers) !== 1 ? "s" : ""}. Are you sure you want to finish?`}
