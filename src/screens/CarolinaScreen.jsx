@@ -119,15 +119,14 @@ function injectCarolinaStyles() {
 // ─── Carolina Avatar ───────────────────────────────────────────
 function CarolinaAvatar({ size = 26 }) {
   return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", background: K.primary, flexShrink: 0,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      <svg width={size * 0.52} height={size * 0.52} viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="4" fill="white" />
-        <path d="M4 20c0-3.31 3.58-6 8-6s8 2.69 8 6" fill="white" />
-      </svg>
-    </div>
+    <img
+      src="/images/Carolina.png"
+      alt="Carolina"
+      style={{
+        width: size, height: size, borderRadius: "50%", flexShrink: 0,
+        objectFit: "cover",
+      }}
+    />
   );
 }
 
