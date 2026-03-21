@@ -19,7 +19,13 @@ export default function useLessonPdf(lessonId) {
         setPdfInfo(null);
       }
     } catch {
-      setPdfInfo(null);
+      // Offline: check if we have a cached PDF blob
+      const cached = await isCached(lessonId);
+      if (cached) {
+        setPdfInfo({ name: "Cached PDF", size: null, isCached: true });
+      } else {
+        setPdfInfo(null);
+      }
     } finally {
       setIsLoading(false);
     }

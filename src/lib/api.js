@@ -1,4 +1,9 @@
 import { supabase } from "./supabase.js";
+import {
+  cacheWeeks, getCachedWeeks,
+  cacheLessons, getCachedLessons, cacheLesson, getCachedLesson,
+  cacheQuizzes, getCachedQuizzes,
+} from "./offline-cache.js";
 
 async function authHeaders() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -9,10 +14,18 @@ async function authHeaders() {
 }
 
 export async function fetchWeeks() {
-  const headers = await authHeaders();
-  const res = await fetch("/api/weeks", { headers });
-  if (!res.ok) throw new Error("Failed to fetch weeks");
-  return res.json();
+  try {
+    const headers = await authHeaders();
+    const res = await fetch("/api/weeks", { headers });
+    if (!res.ok) throw new Error("Failed to fetch weeks");
+    const data = await res.json();
+    cacheWeeks(data).catch(() => {});
+    return data;
+  } catch (e) {
+    const cached = await getCachedWeeks();
+    if (cached.length > 0) return cached;
+    throw e;
+  }
 }
 
 export async function createWeek(week_number, title) {
@@ -37,17 +50,33 @@ export async function deleteWeek(weekId) {
 }
 
 export async function fetchLesson(lessonId) {
-  const headers = await authHeaders();
-  const res = await fetch(`/api/lessons/${lessonId}`, { headers });
-  if (!res.ok) throw new Error("Failed to fetch lesson");
-  return res.json();
+  try {
+    const headers = await authHeaders();
+    const res = await fetch(`/api/lessons/${lessonId}`, { headers });
+    if (!res.ok) throw new Error("Failed to fetch lesson");
+    const data = await res.json();
+    cacheLesson(data).catch(() => {});
+    return data;
+  } catch (e) {
+    const cached = await getCachedLesson(lessonId);
+    if (cached) return cached;
+    throw e;
+  }
 }
 
 export async function fetchLessons(weekId) {
-  const headers = await authHeaders();
-  const res = await fetch(`/api/lessons?week_id=${weekId}`, { headers });
-  if (!res.ok) throw new Error("Failed to fetch lessons");
-  return res.json();
+  try {
+    const headers = await authHeaders();
+    const res = await fetch(`/api/lessons?week_id=${weekId}`, { headers });
+    if (!res.ok) throw new Error("Failed to fetch lessons");
+    const data = await res.json();
+    cacheLessons(data).catch(() => {});
+    return data;
+  } catch (e) {
+    const cached = await getCachedLessons(weekId);
+    if (cached.length > 0) return cached;
+    throw e;
+  }
 }
 
 export async function createLesson(week_id, title, markdown_content) {
@@ -133,14 +162,24 @@ export async function deleteLessonPdf(lessonId) {
 // ── Quizzes ──
 
 export async function fetchQuizzes(filters = {}) {
-  const headers = await authHeaders();
-  const params = new URLSearchParams();
-  if (filters.lesson_id) params.set("lesson_id", filters.lesson_id);
-  if (filters.week_id) params.set("week_id", filters.week_id);
-  const qs = params.toString();
-  const res = await fetch(`/api/quizzes${qs ? `?${qs}` : ""}`, { headers });
-  if (!res.ok) throw new Error("Failed to fetch quizzes");
-  return res.json();
+  try {
+    const headers = await authHeaders();
+    const params = new URLSearchParams();
+    if (filters.lesson_id) params.set("lesson_id", filters.lesson_id);
+    if (filters.week_id) params.set("week_id", filters.week_id);
+    const qs = params.toString();
+    const res = await fetch(`/api/quizzes${qs ? `?${qs}` : ""}`, { headers });
+    if (!res.ok) throw new Error("Failed to fetch quizzes");
+    const data = await res.json();
+    if (!filters.lesson_id && !filters.week_id) {
+      cacheQuizzes(data).catch(() => {});
+    }
+    return data;
+  } catch (e) {
+    const cached = await getCachedQuizzes(filters);
+    if (cached.length > 0) return cached;
+    throw e;
+  }
 }
 
 export async function createQuiz({ title, description, lesson_id, week_id, quiz_data }) {

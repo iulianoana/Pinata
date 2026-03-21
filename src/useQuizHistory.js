@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { saveAttempt as dbSave, getAttempts, deleteAttempt as dbDelete } from "./db.js";
 import { supabase } from "./lib/supabase.js";
+import { cacheQuizData, getCachedQuizData } from "./lib/offline-cache.js";
 
 export function useQuizHistory(session) {
   const [attempts, setAttempts] = useState([]);
@@ -129,13 +130,21 @@ export function useQuizHistory(session) {
 
 /** Fetch a single quiz by UUID. */
 export async function getQuizBySupabaseId(id) {
-  const { data, error } = await supabase
-    .from("quizzes")
-    .select("*")
-    .eq("id", id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("quizzes")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  if (error || !data) return null;
+    if (error || !data) {
+      const cached = await getCachedQuizData(id);
+      return cached;
+    }
 
-  return { id: data.id, data: data.quiz_data };
+    cacheQuizData(id, data.quiz_data).catch(() => {});
+    return { id: data.id, data: data.quiz_data };
+  } catch {
+    return getCachedQuizData(id);
+  }
 }

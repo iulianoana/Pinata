@@ -3,6 +3,8 @@ import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { useQuizHistory } from "./useQuizHistory.js";
 import { supabase } from "./lib/supabase.js";
 import { flush, usePendingCount } from "./lib/syncQueue.js";
+import { prefetchAll } from "./lib/offline-cache.js";
+import { fetchWeeks, fetchLessons, fetchQuizzes } from "./lib/api.js";
 import { injectStyles, C } from "./styles/theme";
 import LoginScreen from "./screens/LoginScreen";
 import QuizzesScreen from "./screens/QuizzesScreen";
@@ -30,9 +32,14 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sync queue + offline prefetch
   useEffect(() => {
     flush();
-    const handleOnline = () => flush();
+    if (navigator.onLine) prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes);
+    const handleOnline = () => {
+      flush();
+      prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes);
+    };
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
   }, []);
