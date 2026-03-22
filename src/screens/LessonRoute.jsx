@@ -32,7 +32,7 @@ export default function LessonRoute() {
 
   if (error) {
     return (
-      <div className="desktop-main safe-top" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
+      <div className="desktop-main safe-top" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <div style={{ textAlign: "center" }}>
           <p style={{ color: C.text, fontSize: 18, fontWeight: 800, marginBottom: 8 }}>Lesson not found</p>
           <button onClick={() => navigate("/lessons")} style={{
@@ -47,14 +47,14 @@ export default function LessonRoute() {
 
   if (!lesson) {
     return (
-      <div className="desktop-main safe-top" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
+      <div className="desktop-main safe-top" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <p style={{ color: C.muted, fontSize: 16, fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="desktop-main safe-top lesson-reader-wrapper">
+    <div className="desktop-main safe-top lesson-reader-wrapper" style={{ background: "#fff" }}>
       <LessonReader
         lesson={lesson}
         weekContext={weekContext}
