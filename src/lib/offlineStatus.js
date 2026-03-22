@@ -130,9 +130,11 @@ export function getWeekCacheStatus(week) {
   let cachedItems = 0;
 
   for (const lesson of week.lessons) {
-    // Count PDF
-    totalItems++;
-    if (lesson.pdfCached) cachedItems++;
+    // Count PDF only if lesson has one
+    if (lesson.pdf_name) {
+      totalItems++;
+      if (lesson.pdfCached) cachedItems++;
+    }
 
     // Count quizzes
     for (const quiz of lesson.quizzes) {

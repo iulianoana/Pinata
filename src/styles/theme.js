@@ -5,6 +5,7 @@ export const C = {
   border: "#D4F0EB", inputBg: "#F0FAF8", overlay: "rgba(26, 47, 43, 0.45)",
   quiz: "#8B5CF6", quizLight: "#EDE9FE", quizHover: "#7C3AED",
   unitQuiz: "#3B82F6", unitQuizLight: "#DBEAFE",
+  amber: "#F59E0B", amberLight: "#FFFBEB", amberDark: "#92400E",
 };
 
 export const injectStyles = () => {

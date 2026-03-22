@@ -176,7 +176,7 @@ export default function QuizzesScreen({ session }) {
                   <span style={{
                     position: "absolute", top: -3, right: -3,
                     width: 8, height: 8, borderRadius: "50%",
-                    background: "#F59E0B", border: `2px solid ${C.bg}`,
+                    background: C.amber, border: `2px solid ${C.bg}`,
                   }} />
                 )}
               </button>

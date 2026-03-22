@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../styles/theme";
 import { getOfflineStatus, getWeekCacheStatus } from "../lib/offlineStatus";
@@ -75,8 +75,8 @@ const ChatBubbleIcon = () => (
 );
 
 const LoaderIcon = () => (
-  <div style={{ width: 28, height: 28, borderRadius: 8, background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <div style={{ width: 28, height: 28, borderRadius: 8, background: C.amberLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="2" x2="12" y2="6" /><line x1="12" y1="18" x2="12" y2="22" />
       <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" /><line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
       <line x1="2" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="22" y2="12" />
@@ -116,7 +116,7 @@ function StatusBadge({ status, syncing }) {
   }
   const map = {
     cached: { bg: C.successLight, color: C.success, text: "Cached" },
-    partial: { bg: "#FFFBEB", color: "#92400E", text: "Partial" },
+    partial: { bg: C.amberLight, color: C.amberDark, text: "Partial" },
     none: { bg: C.errorLight, color: C.error, text: "Not cached" },
   };
   const s = map[status] || map.none;
@@ -137,7 +137,7 @@ function getLessonIconStyle(lesson) {
 
   if (allCached) return { bg: C.successLight, stroke: C.success };
   if (someCached) return { bg: C.accentLight, stroke: C.accent };
-  return { bg: "#FFFBEB", stroke: "#F59E0B" };
+  return { bg: C.amberLight, stroke: C.amber };
 }
 
 // ── Main Screen ──
@@ -151,15 +151,17 @@ export default function StorageScreen({ session }) {
   const [syncProgress, setSyncProgress] = useState(null);
   const [downloadingItems, setDownloadingItems] = useState(new Set());
   const [error, setError] = useState(null);
+  const initialOpenDone = useRef(false);
 
   const loadStatus = useCallback(async () => {
     try {
       const s = await getOfflineStatus();
       setStatus(s);
       setError(null);
-      // Default: open first week
-      if (s.weeks.length > 0 && openWeeks.size === 0) {
+      // Default: open first week (only on initial load)
+      if (!initialOpenDone.current && s.weeks.length > 0) {
         setOpenWeeks(new Set([s.weeks[0].id]));
+        initialOpenDone.current = true;
       }
     } catch {
       setError("Unable to check cache status");
@@ -451,8 +453,8 @@ export default function StorageScreen({ session }) {
                           return (
                             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px 8px 64px" }}>
                               <DocIcon
-                                bg={lesson.pdfCached ? C.successLight : "#FFFBEB"}
-                                stroke={lesson.pdfCached ? C.success : "#F59E0B"}
+                                bg={lesson.pdfCached ? C.successLight : C.amberLight}
+                                stroke={lesson.pdfCached ? C.success : C.amber}
                               />
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Lesson PDF</div>
@@ -479,7 +481,7 @@ export default function StorageScreen({ session }) {
                         {/* Show PDF row even if no pdf_name, but only if lesson has no pdf */}
                         {!lesson.pdf_name && (
                           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px 8px 64px" }}>
-                            <DocIcon bg="#FFFBEB" stroke="#F59E0B" />
+                            <DocIcon bg={C.amberLight} stroke={C.amber} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Lesson PDF</div>
                               <div style={{ fontSize: 10, fontWeight: 600, color: C.muted }}>No PDF uploaded</div>
