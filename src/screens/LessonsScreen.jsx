@@ -26,7 +26,7 @@ export default function LessonsScreen({ session }) {
   const [quizCounts, setQuizCounts] = useState({ perLesson: {}, weekTotal: {} });
   const [addQuizWeek, setAddQuizWeek] = useState(null);
   const [addQuizLesson, setAddQuizLesson] = useState(null);
-  const [activeUnit, setActiveUnit] = useState(0);
+  const [activeUnit, setActiveUnit] = useState(null); // null = "All"
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [uploadState, setUploadState] = useState(null); // { lessonId, progress, phase }
 
@@ -119,7 +119,22 @@ export default function LessonsScreen({ session }) {
 
   const handleCreateWeek = async (weekNumber, title) => {
     await createWeek(weekNumber, title);
-    await loadWeeks();
+    const data = await fetchWeeks();
+    setWeeks(data);
+    setLoading(false);
+    // Expand and scroll to the new unit
+    const newUnit = data.find(w => w.week_number === weekNumber);
+    if (newUnit) {
+      setExpandedWeeks(prev => new Set([...prev, newUnit.id]));
+      const idx = data.findIndex(w => w.id === newUnit.id);
+      setActiveUnit(idx);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const el = unitRefs.current[newUnit.id];
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      });
+    }
   };
 
   const handleDeleteWeek = (week) =>
@@ -188,6 +203,12 @@ export default function LessonsScreen({ session }) {
   const handleQuizAdded = () => loadQuizCounts();
 
   const scrollToUnit = (index) => {
+    if (index === null) {
+      // "All" — scroll to top
+      setActiveUnit(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setActiveUnit(index);
     const el = unitRefs.current[weeks[index]?.id];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -205,14 +226,75 @@ export default function LessonsScreen({ session }) {
       <div className="safe-top desktop-main lessons-page">
 
         {/* ─── Title ─── */}
-        <div style={{ paddingTop: 16, marginBottom: 16 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1.2, fontFamily: "'Nunito', sans-serif" }}>
-            Lessons
-          </h1>
-          <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-            {weeks.length} unit{weeks.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
-            {totalQuizzes > 0 && <> · {totalQuizzes} quiz{totalQuizzes !== 1 ? "zes" : ""}</>}
-          </p>
+        <div style={{ paddingTop: 16, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1.2, fontFamily: "'Nunito', sans-serif" }}>
+              Lessons
+            </h1>
+            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+              {weeks.length} unit{weeks.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
+              {totalQuizzes > 0 && <> · {totalQuizzes} quiz{totalQuizzes !== 1 ? "zes" : ""}</>}
+            </p>
+          </div>
+
+          {/* Mobile "+" button (hidden on desktop where toolbar has "New unit") */}
+          <div className="fab-new-week" style={{ position: "relative" }}>
+            <button
+              onClick={() => setFabMenuOpen(f => !f)}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                border: `1.5px solid ${C.border}`, background: C.card,
+                color: C.muted, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            {fabMenuOpen && (
+              <>
+                <div style={{ position: "fixed", inset: 0, zIndex: 19 }} onClick={() => setFabMenuOpen(false)} />
+                <div style={{
+                  position: "absolute", right: 0, top: "100%", marginTop: 4, zIndex: 20,
+                  background: C.card, borderRadius: 12, padding: 4,
+                  boxShadow: "0 4px 16px rgba(0,60,50,0.12)",
+                  border: `1px solid ${C.border}`, minWidth: 150,
+                  animation: "fadeIn 0.1s ease-out",
+                }}>
+                  <button onClick={() => { setFabMenuOpen(false); setShowAddWeek(true); }} style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%",
+                    padding: "10px 12px", border: "none", background: "transparent",
+                    color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                    fontFamily: "'Nunito', sans-serif", borderRadius: 8, textAlign: "left",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    New unit
+                  </button>
+                  <button onClick={() => {
+                    setFabMenuOpen(false);
+                    if (weeks.length) {
+                      const expandedId = [...expandedWeeks][0] || weeks[0].id;
+                      setAddLessonWeek(weeks.find(w => w.id === expandedId) || weeks[0]);
+                    }
+                  }} style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%",
+                    padding: "10px 12px", border: "none", background: "transparent",
+                    color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                    fontFamily: "'Nunito', sans-serif", borderRadius: 8, textAlign: "left",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    New lesson
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* ─── Toolbar ─── */}
@@ -280,6 +362,17 @@ export default function LessonsScreen({ session }) {
         {weeks.length > 0 && (
           <div style={{ position: "sticky", top: 0, zIndex: 10, background: C.bg, padding: "6px 0 10px" }}>
             <div className="unit-pill-nav">
+              <button onClick={() => scrollToUnit(null)} style={{
+                padding: "6px 14px", borderRadius: 20,
+                border: `1.5px solid ${activeUnit === null ? C.accent : C.border}`,
+                background: activeUnit === null ? C.accentLight : C.card,
+                color: activeUnit === null ? C.accent : C.muted,
+                fontWeight: activeUnit === null ? 800 : 700,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s",
+              }}>
+                All
+              </button>
               {weeks.map((w, i) => (
                 <button key={w.id} onClick={() => scrollToUnit(i)} style={{
                   padding: "6px 14px", borderRadius: 20,
@@ -349,56 +442,6 @@ export default function LessonsScreen({ session }) {
 
       {/* Hidden PDF upload input */}
       <input ref={uploadRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleFileSelected} />
-
-      {/* ─── Mobile FAB ─── */}
-      <div className="fab-new-week" style={{ position: "fixed", bottom: 80, right: 24, zIndex: 15 }}>
-        {fabMenuOpen && (
-          <>
-            <div style={{ position: "fixed", inset: 0, zIndex: -1 }} onClick={() => setFabMenuOpen(false)} />
-            <div style={{
-              position: "absolute", bottom: 64, right: 0,
-              background: C.card, borderRadius: 14, padding: 6,
-              boxShadow: "0 4px 20px rgba(0,60,50,0.15)",
-              border: `1px solid ${C.border}`, minWidth: 160,
-              animation: "slideUp 0.15s ease-out",
-            }}>
-              <button onClick={() => { setFabMenuOpen(false); setShowAddWeek(true); }} style={{
-                display: "flex", alignItems: "center", gap: 10, width: "100%",
-                padding: "10px 14px", border: "none", background: "transparent",
-                color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
-                fontFamily: "'Nunito', sans-serif", borderRadius: 10, textAlign: "left",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                New unit
-              </button>
-              <button onClick={() => {
-                setFabMenuOpen(false);
-                if (weeks.length) {
-                  const expandedId = [...expandedWeeks][0] || weeks[0].id;
-                  setAddLessonWeek(weeks.find(w => w.id === expandedId) || weeks[0]);
-                }
-              }} style={{
-                display: "flex", alignItems: "center", gap: 10, width: "100%",
-                padding: "10px 14px", border: "none", background: "transparent",
-                color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
-                fontFamily: "'Nunito', sans-serif", borderRadius: 10, textAlign: "left",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                New lesson
-              </button>
-            </div>
-          </>
-        )}
-        <button onClick={() => setFabMenuOpen(f => !f)} style={{
-          width: 56, height: 56, borderRadius: "50%", border: "none",
-          background: C.accent, color: "#fff", fontSize: 28, fontWeight: 300,
-          cursor: "pointer", boxShadow: "0 4px 16px rgba(0,180,160,0.3)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "transform 0.2s", transform: fabMenuOpen ? "rotate(45deg)" : "none",
-        }}>+</button>
-      </div>
 
       <MobileNavBar active="lessons" />
 
