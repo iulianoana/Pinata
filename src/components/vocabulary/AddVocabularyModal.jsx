@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { C } from "../../styles/theme";
 import { useAddVocabulary, useExplainWord } from "../../useVocabulary";
 
+
 // ── Helpers ──
 
 function parseWords(text) {
@@ -26,7 +27,7 @@ function useIsMobile() {
 export default function AddVocabularyModal({ open, onClose, onSuccess }) {
   const isMobile = useIsMobile();
   const { addWords } = useAddVocabulary();
-  const { explain } = useExplainWord();
+  const { explain, explainBulk } = useExplainWord();
 
   // State machine: "input" | "processing" | "complete"
   const [phase, setPhase] = useState("input");
@@ -94,86 +95,66 @@ export default function AddVocabularyModal({ open, onClose, onSuccess }) {
       return;
     }
 
-    // AI mode
+    // AI mode — single bulk request
     const words = parseWords(inputText);
     if (words.length === 0) return;
 
-    const statuses = words.map((w) => ({ word: w, status: "queued" }));
-    setWordStatuses(statuses);
+    // Mark all words as processing (single AI call handles them all)
+    setWordStatuses(words.map((w) => ({ word: w, status: "processing" })));
     setPhase("processing");
 
-    // Process with concurrency limit of 3
-    const finalResults = [...statuses];
-    const queue = [...words.map((w, i) => i)];
-    const concurrency = 3;
-    let running = 0;
+    try {
+      // One AI request for all words
+      const aiResponse = words.length === 1
+        ? await explain(words[0])
+        : await explainBulk(words);
 
-    const processNext = () => {
-      return new Promise((resolve) => {
-        const run = async () => {
-          while (queue.length > 0 && !abortRef.current) {
-            if (running >= concurrency) {
-              await new Promise((r) => setTimeout(r, 100));
-              continue;
-            }
-            const idx = queue.shift();
-            if (idx === undefined) break;
-            running++;
+      // Normalize to array of results
+      const aiResults = words.length === 1
+        ? [{ original: words[0], corrected_word: aiResponse.corrected_word, explanation_es: aiResponse.explanation_es, explanation_en: aiResponse.explanation_en }]
+        : (aiResponse.results || []);
 
-            // Mark as processing
-            setWordStatuses((prev) => {
-              const next = [...prev];
-              next[idx] = { ...next[idx], status: "processing" };
-              return next;
-            });
-
-            try {
-              const aiResult = await explain(words[idx]);
-              const correctedWord = aiResult.corrected_word || words[idx];
-              const wasCorrected = correctedWord.toLowerCase() !== words[idx].toLowerCase();
-
-              // Save to DB
-              await addWords([{
-                word: correctedWord,
-                original_input: wasCorrected ? words[idx] : null,
-                explanation_es: aiResult.explanation_es,
-                explanation_en: aiResult.explanation_en,
-                ai_generated: true,
-              }]);
-
-              finalResults[idx] = {
-                word: correctedWord,
-                originalInput: wasCorrected ? words[idx] : null,
-                status: "done",
-                corrected: wasCorrected,
-              };
-
-              setWordStatuses((prev) => {
-                const next = [...prev];
-                next[idx] = { ...next[idx], status: "done", word: correctedWord };
-                return next;
-              });
-            } catch {
-              finalResults[idx] = { word: words[idx], status: "failed" };
-              setWordStatuses((prev) => {
-                const next = [...prev];
-                next[idx] = { ...next[idx], status: "failed" };
-                return next;
-              });
-            }
-            running--;
-          }
-          resolve();
+      // Save all words to DB in one batch
+      const wordsToSave = aiResults.map((r, i) => {
+        const original = words[i] || r.original;
+        const corrected = r.corrected_word || original;
+        const wasCorrected = corrected.toLowerCase() !== original.toLowerCase();
+        return {
+          word: corrected,
+          original_input: wasCorrected ? original : null,
+          explanation_es: r.explanation_es,
+          explanation_en: r.explanation_en,
+          ai_generated: true,
         };
-        run();
       });
-    };
 
-    await processNext();
-    setResults(finalResults);
-    setPhase("complete");
-    onSuccess?.();
-  }, [aiEnabled, inputText, manualWord, manualEs, manualEn, addWords, explain, onSuccess]);
+      await addWords(wordsToSave);
+
+      // Build final results
+      const finalResults = aiResults.map((r, i) => {
+        const original = words[i] || r.original;
+        const corrected = r.corrected_word || original;
+        const wasCorrected = corrected.toLowerCase() !== original.toLowerCase();
+        return {
+          word: corrected,
+          originalInput: wasCorrected ? original : null,
+          status: "done",
+          corrected: wasCorrected,
+        };
+      });
+
+      setWordStatuses(finalResults.map((r) => ({ word: r.word, status: "done" })));
+      setResults(finalResults);
+      setPhase("complete");
+      onSuccess?.();
+    } catch {
+      // Entire request failed — mark all as failed
+      const failedResults = words.map((w) => ({ word: w, status: "failed" }));
+      setWordStatuses(failedResults.map((r) => ({ word: r.word, status: "failed" })));
+      setResults(failedResults);
+      setPhase("complete");
+    }
+  }, [aiEnabled, inputText, manualWord, manualEs, manualEn, addWords, explain, explainBulk, onSuccess]);
 
   // ── Retry a failed word ──
 

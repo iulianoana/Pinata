@@ -139,6 +139,7 @@ export function useExplainWord() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Single word: explain("word") → { corrected_word, explanation_es, explanation_en }
   const explain = useCallback(async (word) => {
     setIsLoading(true);
     setError(null);
@@ -162,5 +163,29 @@ export function useExplainWord() {
     }
   }, []);
 
-  return { explain, isLoading, error };
+  // Bulk: explainBulk(["w1","w2"]) → { results: [{ original, corrected_word, ... }] }
+  const explainBulk = useCallback(async (words) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch("/api/vocabulary/explain", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ words }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to explain words");
+      }
+      return await res.json();
+    } catch (e) {
+      setError(e);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { explain, explainBulk, isLoading, error };
 }
