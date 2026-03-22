@@ -12,6 +12,7 @@ const withPWA = withPWAInit({
       { url: "/icons/logo.png", revision: "1" },
       { url: "/icons/app-logo.png", revision: "1" },
       { url: "/images/Carolina.png", revision: "1" },
+      { url: "/pdf.worker.min.mjs", revision: "1" },
     ],
     runtimeCaching: [
       {
@@ -56,20 +57,18 @@ const withPWA = withPWAInit({
       },
       {
         urlPattern: /\/api\/quizzes.*/i,
-        handler: "NetworkFirst",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "api-quizzes",
           expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 7 },
-          networkTimeoutSeconds: 5,
         },
       },
       {
         urlPattern: /\/api\/lessons.*/i,
-        handler: "NetworkFirst",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "api-lessons",
           expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 7 },
-          networkTimeoutSeconds: 5,
         },
       },
       {
@@ -82,11 +81,18 @@ const withPWA = withPWAInit({
       },
       {
         urlPattern: /\/api\/weeks.*/i,
-        handler: "NetworkFirst",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "api-weeks",
           expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 7 },
-          networkTimeoutSeconds: 5,
+        },
+      },
+      {
+        urlPattern: /^https?:\/\/[^/]+\/((?!api\/|_next\/|pdfjs\/).)*$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "pages",
+          expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 30 },
         },
       },
     ],

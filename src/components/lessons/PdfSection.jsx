@@ -16,7 +16,7 @@ export default function PdfSection({ pdfInfo, isLoading, uploadProgress, uploadP
   const [deleting, setDeleting] = useState(false);
   const [viewing, setViewing] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -36,8 +36,7 @@ export default function PdfSection({ pdfInfo, isLoading, uploadProgress, uploadP
     try {
       const blob = await onView();
       if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      setPdfBlobUrl(url);
+      setPdfBlob(blob);
       setShowViewer(true);
     } finally {
       setViewing(false);
@@ -46,10 +45,7 @@ export default function PdfSection({ pdfInfo, isLoading, uploadProgress, uploadP
 
   const handleCloseViewer = () => {
     setShowViewer(false);
-    if (pdfBlobUrl) {
-      URL.revokeObjectURL(pdfBlobUrl);
-      setPdfBlobUrl(null);
-    }
+    setPdfBlob(null);
   };
 
   const handleDelete = async () => {
@@ -162,9 +158,9 @@ export default function PdfSection({ pdfInfo, isLoading, uploadProgress, uploadP
         </div>
 
         {/* Full-screen mobile PDF viewer overlay */}
-        {showViewer && pdfBlobUrl && (
+        {showViewer && pdfBlob && (
           <MobilePdfViewer
-            blobUrl={pdfBlobUrl}
+            blob={pdfBlob}
             fileName={pdfInfo.name}
             fileSize={pdfInfo.size}
             isCached={pdfInfo.isCached}
