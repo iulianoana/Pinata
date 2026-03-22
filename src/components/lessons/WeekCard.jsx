@@ -8,7 +8,7 @@ import { fetchLessons, reorderLessons } from "../../lib/api";
 export default function WeekCard({
   week, expanded, refreshKey, searchQuery,
   onToggle, onSelectLesson, onAddLesson, onDeleteLesson, onDeleteWeek,
-  onUploadPdf, onAddQuizLesson, quizCounts, onAddUnitQuiz,
+  onUploadPdf, onAddQuizLesson, quizCounts, onAddUnitQuiz, uploadState,
 }) {
   const [lessons, setLessons] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -154,6 +154,8 @@ export default function WeekCard({
                     onUpload={onUploadPdf}
                     onAddQuiz={onAddQuizLesson}
                     quizCount={quizCounts?.perLesson?.[lesson.id] || 0}
+                    uploadProgress={uploadState?.lessonId === lesson.id ? uploadState.progress : null}
+                    uploadPhase={uploadState?.lessonId === lesson.id ? uploadState.phase : null}
                   />
                 ))}
               </SortableContext>

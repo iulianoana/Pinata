@@ -16,7 +16,10 @@ function stripMarkdown(md) {
     .slice(0, 80);
 }
 
-export default function LessonRow({ lesson, weekTitle, onSelect, onDelete, onUpload, onAddQuiz, quizCount = 0 }) {
+const PHASE_LABELS = { token: "Preparing...", uploading: "Uploading...", compressing: "Compressing...", saving: "Saving..." };
+
+export default function LessonRow({ lesson, weekTitle, onSelect, onDelete, onUpload, onAddQuiz, quizCount = 0, uploadProgress = null, uploadPhase = null }) {
+  const isUploading = uploadPhase !== null;
   const [pdfCached, setPdfCached] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -45,8 +48,33 @@ export default function LessonRow({ lesson, weekTitle, onSelect, onDelete, onUpl
 
   /* ── Badges ── */
   const badges = [];
+  const isIndeterminate = uploadPhase === "compressing" || uploadPhase === "saving" || uploadPhase === "token";
+  const phaseLabel = PHASE_LABELS[uploadPhase] || "Uploading...";
 
-  if (lesson.pdf_path) {
+  if (isUploading) {
+    // Inline upload progress badge — replaces the PDF badge during upload
+    badges.push(
+      <span
+        key="uploading"
+        title={phaseLabel + (!isIndeterminate && uploadProgress != null ? ` ${uploadProgress}%` : "")}
+        style={{
+          display: "inline-flex", flexDirection: "column", gap: 3,
+          padding: "4px 10px", borderRadius: 6,
+          background: C.accentLight, color: C.accent,
+          fontSize: 11, fontWeight: 800, minWidth: 100,
+        }}
+      >
+        <span>{phaseLabel}{!isIndeterminate && uploadProgress != null ? ` ${uploadProgress}%` : ""}</span>
+        <div style={{ height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+          {isIndeterminate ? (
+            <div className="progress-indeterminate" style={{ background: C.accent, height: "100%", width: "40%", borderRadius: 2 }} />
+          ) : (
+            <div style={{ background: C.accent, height: "100%", width: `${uploadProgress || 0}%`, borderRadius: 2, transition: "width 0.2s" }} />
+          )}
+        </div>
+      </span>
+    );
+  } else if (lesson.pdf_path) {
     badges.push(
       <span key="pdf" style={{
         display: "inline-flex", alignItems: "center", gap: 3,

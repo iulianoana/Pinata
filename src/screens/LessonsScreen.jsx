@@ -28,6 +28,7 @@ export default function LessonsScreen({ session }) {
   const [addQuizLesson, setAddQuizLesson] = useState(null);
   const [activeUnit, setActiveUnit] = useState(0);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [uploadState, setUploadState] = useState(null); // { lessonId, progress, phase }
 
   const unitRefs = useRef({});
   const uploadRef = useRef(null);
@@ -170,10 +171,16 @@ export default function LessonsScreen({ session }) {
     const file = e.target.files?.[0];
     const target = uploadTargetRef.current;
     if (!file || !target) return;
+    setUploadState({ lessonId: target.lessonId, progress: 0, phase: "uploading" });
     try {
-      await uploadLessonPdf(target.lessonId, file, () => {}, () => {});
+      await uploadLessonPdf(
+        target.lessonId, file,
+        (progress) => setUploadState(prev => prev ? { ...prev, progress } : null),
+        (phase) => setUploadState(prev => prev ? { ...prev, phase } : null),
+      );
       bumpRefreshKey(target.weekId);
     } catch (err) { console.error("Upload failed:", err); }
+    finally { setUploadState(null); }
     uploadTargetRef.current = null;
     e.target.value = "";
   };
@@ -330,6 +337,7 @@ export default function LessonsScreen({ session }) {
                     onUploadPdf={l => handleUploadPdf(l, week.id)}
                     onAddQuizLesson={l => setAddQuizLesson(l)}
                     quizCounts={quizCounts}
+                    uploadState={uploadState}
                     onAddUnitQuiz={() => setAddQuizWeek(week)}
                   />
                 </div>
