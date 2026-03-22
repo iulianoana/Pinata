@@ -219,6 +219,18 @@ export async function deleteLessonPdf(lessonId) {
   return res.json();
 }
 
+// ── Quiz data (single quiz with quiz_data) ──
+
+export async function fetchQuizData(quizId) {
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select("id, quiz_data")
+    .eq("id", quizId)
+    .single();
+  if (error || !data) return null;
+  return data;
+}
+
 // ── Quizzes ──
 
 export async function fetchQuizzes(filters = {}) {

@@ -4,7 +4,7 @@ import { C } from "../styles/theme";
 import { getOfflineStatus, getWeekCacheStatus } from "../lib/offlineStatus";
 import { prefetchAll, cacheQuizData } from "../lib/offline-cache";
 import { cachePdf } from "../lib/pdf-cache";
-import { fetchWeeks, fetchLessons, fetchQuizzes, getLessonPdfUrl } from "../lib/api";
+import { fetchWeeks, fetchLessons, fetchQuizzes, fetchQuizData, getLessonPdfUrl } from "../lib/api";
 import { relativeTime } from "../utils/helpers";
 import MobileNavBar from "../components/MobileNavBar";
 
@@ -200,10 +200,9 @@ export default function StorageScreen({ session }) {
     const key = `quiz-${quizId}`;
     setDownloadingItems((prev) => new Set(prev).add(key));
     try {
-      const allQuizzes = await fetchQuizzes();
-      const quiz = allQuizzes.find((q) => q.id === quizId);
-      if (quiz?.quiz_data) {
-        await cacheQuizData(quizId, quiz.quiz_data);
+      const qd = await fetchQuizData(quizId);
+      if (qd?.quiz_data) {
+        await cacheQuizData(quizId, qd.quiz_data);
       }
     } catch {}
     setDownloadingItems((prev) => { const n = new Set(prev); n.delete(key); return n; });

@@ -1,6 +1,6 @@
 import Dexie from "dexie";
 import { cachePdf, isCached as isPdfCached } from "./pdf-cache.js";
-import { getLessonPdfUrl } from "./api.js";
+import { getLessonPdfUrl, fetchQuizData } from "./api.js";
 
 const db = new Dexie("pinata-offline");
 db.version(1).stores({
@@ -79,21 +79,29 @@ export async function prefetchAll(fetchWeeksFn, fetchLessonsFn, fetchQuizzesFn, 
     await cacheWeeks(weeks);
     await cacheQuizzes(quizzes);
 
-    // Phase 2: quiz data blobs
-    const quizzesWithData = quizzes.filter((q) => q.quiz_data);
-    for (let i = 0; i < quizzesWithData.length; i++) {
-      await cacheQuizData(quizzesWithData[i].id, quizzesWithData[i].quiz_data);
-      onProgress?.("quizzes", i + 1, quizzesWithData.length);
+    // Phase 2: quiz data blobs (fetched individually — list API doesn't include quiz_data)
+    for (let i = 0; i < quizzes.length; i++) {
+      try {
+        const cached = await getCachedQuizData(quizzes[i].id);
+        if (!cached) {
+          const qd = await fetchQuizData(quizzes[i].id);
+          if (qd?.quiz_data) {
+            await cacheQuizData(qd.id, qd.quiz_data);
+          }
+        }
+      } catch { /* skip */ }
+      onProgress?.("quizzes", i + 1, quizzes.length);
     }
 
-    // Phase 3: lessons per week
+    // Phase 3: lessons per week (inject week_id — API doesn't return it)
     let lessonsDone = 0;
     const allLessons = [];
     for (const week of weeks) {
       try {
         const lessons = await fetchLessonsFn(week.id);
-        await cacheLessons(lessons);
-        allLessons.push(...lessons);
+        const lessonsWithWeekId = lessons.map((l) => ({ ...l, week_id: week.id }));
+        await cacheLessons(lessonsWithWeekId);
+        allLessons.push(...lessonsWithWeekId);
         lessonsDone++;
         onProgress?.("lessons", lessonsDone, weeks.length);
       } catch { /* skip failed week */ }
