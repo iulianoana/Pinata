@@ -54,6 +54,23 @@ function pcm16ToWav(pcmBuffer, sampleRate) {
   return new Blob([header, pcmBytes], { type: "audio/wav" });
 }
 
+/**
+ * Mic gate configuration — tweak these to control how easily
+ * background noise triggers AI interruptions.
+ *
+ * RMS (Root Mean Square) measures audio volume: 0.0 = silence, ~0.02–0.15 = normal speech.
+ */
+export const MIC_GATE = {
+  /** When AI is NOT speaking: minimum RMS to send audio.
+   *  0 = send everything (most responsive). */
+  idleThreshold: 0.005,
+
+  /** When AI IS speaking: minimum RMS to allow an interrupt.
+   *  Higher = harder to interrupt = less sensitive to background noise.
+   *  Recommended: 0.03 (quiet room) → 0.08 (noisy car). */
+  interruptThreshold: 0.06,
+};
+
 export function useInstantMode() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -275,9 +292,25 @@ export function useInstantMode() {
     nodesRef.current.push(silentGain);
 
     const sendPCM = (buffer) => {
-      // Only buffer for transcription while user is speaking (not during AI response)
+      // --- Volume gate: skip quiet chunks to prevent background-noise interruptions ---
+      const int16 = new Int16Array(buffer);
+      let sumSq = 0;
+      for (let i = 0; i < int16.length; i++) {
+        const s = int16[i] / 32768;
+        sumSq += s * s;
+      }
+      const rms = Math.sqrt(sumSq / int16.length);
+
+      const threshold = aiRespondingRef.current
+        ? MIC_GATE.interruptThreshold
+        : MIC_GATE.idleThreshold;
+
+      if (rms < threshold) return; // below gate — don't send to Gemini
+      // -----------------------------------------------------------------------
+
+      // Buffer for transcription while user is speaking (not during AI response)
       if (!aiRespondingRef.current) {
-        userAudioBufferRef.current.push(new Int16Array(buffer).slice());
+        userAudioBufferRef.current.push(int16.slice());
       }
 
       if (ws.readyState === WebSocket.OPEN) {
@@ -398,6 +431,12 @@ export function useInstantMode() {
               },
               systemInstruction: {
                 parts: [{ text: config.systemInstruction }],
+              },
+              realtimeInputConfig: {
+                automaticActivityDetection: {
+                  startOfSpeechSensitivity: "START_SENSITIVITY_LOW",
+                  endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
+                },
               },
               outputAudioTranscription: {},
             },
