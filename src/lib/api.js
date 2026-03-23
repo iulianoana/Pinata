@@ -311,6 +311,15 @@ export async function deleteQuiz(quizId) {
   return res.json();
 }
 
+// ── Carolina Resources (weeks + lessons for pickers) ──
+
+export async function fetchCarolinaResources() {
+  const headers = await authHeaders();
+  const res = await fetch("/api/carolina/resources", { headers });
+  if (!res.ok) throw new Error("Failed to fetch resources");
+  return res.json();
+}
+
 // ── Lesson Links ──
 
 export async function fetchLessonLinks(lessonId) {

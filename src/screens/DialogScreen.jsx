@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { C } from "../styles/theme";
 import { useInstantMode } from "../lib/useInstantMode";
 import { useChatHistory } from "../lib/useChatHistory";
+import { fetchCarolinaResources, fetchLesson } from "../lib/api";
 
 // Blue accent for orb & session UI
 const B = {
@@ -33,9 +34,10 @@ function formatSessionDate(isoString) {
 
 export default function DialogScreen({ session }) {
   const navigate = useNavigate();
-  const [currentUnit, setCurrentUnit] = useState(null);
-  const [availableUnits, setAvailableUnits] = useState([]);
-  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [resources, setResources] = useState([]);       // weeks with nested lessons from DB
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
+  const [selectedLessonLabel, setSelectedLessonLabel] = useState(null);
+  const [lessonContent, setLessonContent] = useState(null);
   const [showTranscript, setShowTranscript] = useState(false);
   const transcriptEndRef = useRef(null);
 
@@ -60,23 +62,11 @@ export default function DialogScreen({ session }) {
     });
   }, [userId]);
 
-  // Discover available units
+  // Load weeks + lessons from database
   useEffect(() => {
-    const units = [];
-    (async () => {
-      for (let i = 1; i <= 20; i++) {
-        const num = String(i).padStart(2, "0");
-        try {
-          const res = await fetch(`/units/unit-${num}.md`, { method: "HEAD" });
-          const ct = res.headers.get("content-type") || "";
-          if (res.ok && !ct.startsWith("text/html")) units.push(`unit-${num}`);
-          else break;
-        } catch {
-          break;
-        }
-      }
-      setAvailableUnits(units);
-    })();
+    fetchCarolinaResources()
+      .then((data) => setResources(data))
+      .catch(() => {});
   }, []);
 
   // Auto-scroll transcript
@@ -112,30 +102,28 @@ export default function DialogScreen({ session }) {
     }
   }, [instant.isSessionActive, instant.isConnecting]);
 
-  const handleUnitChange = async (unitId) => {
-    if (unitId === selectedUnit) return;
-    setSelectedUnit(unitId);
-    if (!unitId) {
-      setCurrentUnit(null);
+  const handleLessonChange = async (lessonId, label) => {
+    if (lessonId === selectedLessonId) return;
+    setSelectedLessonId(lessonId);
+    setSelectedLessonLabel(label);
+    if (!lessonId) {
+      setLessonContent(null);
       return;
     }
     try {
-      const res = await fetch(`/units/${unitId}.md`);
-      if (res.ok) setCurrentUnit(await res.text());
-    } catch {}
-  };
-
-  const getUnitDisplayName = () => {
-    if (!selectedUnit) return "Free conversation";
-    const num = parseInt(selectedUnit.replace("unit-", ""), 10);
-    return `Unit ${num}`;
+      const lesson = await fetchLesson(lessonId);
+      setLessonContent(lesson.markdown_content || null);
+    } catch {
+      setLessonContent(null);
+    }
   };
 
   const handleStartInstant = async () => {
+    const displayName = selectedLessonLabel || "Free conversation";
     if (userId) {
-      await chatHistory.startChatSession(userId, getUnitDisplayName());
+      await chatHistory.startChatSession(userId, displayName);
     }
-    instant.startSession(currentUnit || null);
+    instant.startSession(lessonContent || null);
   };
 
   const handleEndCall = () => {
@@ -164,8 +152,6 @@ export default function DialogScreen({ session }) {
     const data = await chatHistory.getSession(sessionId);
     if (data) setViewingSession(data);
   };
-
-  const unitLabel = (id) => `Unit ${parseInt(id.replace("unit-", ""), 10)}`;
 
   const messageCount = instant.transcript.length;
   const isPreCall = !instant.isSessionActive && !instant.isConnecting;
@@ -325,12 +311,12 @@ export default function DialogScreen({ session }) {
               Your Spanish practice buddy
             </p>
 
-            {/* Unit selector */}
-            <UnitDropdown
-              units={availableUnits}
-              selected={selectedUnit}
-              onChange={handleUnitChange}
-              unitLabel={unitLabel}
+            {/* Lesson selector */}
+            <LessonDropdown
+              resources={resources}
+              selectedId={selectedLessonId}
+              selectedLabel={selectedLessonLabel}
+              onChange={handleLessonChange}
             />
 
             {/* Past conversations link */}
@@ -1149,7 +1135,7 @@ export default function DialogScreen({ session }) {
 
 /* ---- Small helper components ---- */
 
-function UnitDropdown({ units, selected, onChange, unitLabel }) {
+function LessonDropdown({ resources, selectedId, selectedLabel, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -1165,12 +1151,10 @@ function UnitDropdown({ units, selected, onChange, unitLabel }) {
     };
   }, []);
 
-  const displayLabel = selected ? unitLabel(selected) : "Free conversation";
+  const displayLabel = selectedLabel || "Free conversation";
 
-  const options = [
-    { id: null, label: "Free conversation" },
-    ...units.map((u) => ({ id: u, label: unitLabel(u) })),
-  ];
+  // Filter to weeks that have at least one lesson
+  const weeksWithLessons = resources.filter((w) => w.lessons?.length > 0);
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -1221,71 +1205,111 @@ function UnitDropdown({ units, selected, onChange, unitLabel }) {
             top: "calc(100% + 6px)",
             left: "50%",
             transform: "translateX(-50%)",
-            minWidth: 180,
+            minWidth: 240,
+            maxHeight: 320,
+            overflowY: "auto",
             background: C.card,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
             zIndex: 50,
-            overflow: "hidden",
             animation: "dropdownIn 0.15s ease-out",
           }}
         >
-          {options.map((opt) => {
-            const isActive = opt.id === selected;
-            return (
-              <button
-                key={opt.id ?? "general"}
-                onClick={() => {
-                  onChange(opt.id);
-                  setOpen(false);
-                }}
+          {/* Free conversation option */}
+          <button
+            onClick={() => { onChange(null, null); setOpen(false); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              width: "100%",
+              padding: "10px 14px",
+              border: "none",
+              background: !selectedId ? C.accentLight : "transparent",
+              color: !selectedId ? C.accent : C.text,
+              fontSize: 13,
+              fontWeight: !selectedId ? 800 : 600,
+              fontFamily: "'Nunito', sans-serif",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            {!selectedId && <CheckIcon />}
+            Free conversation
+          </button>
+
+          {/* Weeks with lessons */}
+          {weeksWithLessons.map((week) => (
+            <div key={week.id}>
+              {/* Week header */}
+              <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  width: "100%",
-                  padding: "10px 14px",
-                  border: "none",
-                  background: isActive ? C.accentLight : "transparent",
-                  color: isActive ? C.accent : C.text,
-                  fontSize: 13,
-                  fontWeight: isActive ? 800 : 600,
-                  fontFamily: "'Nunito', sans-serif",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = C.bg;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = isActive
-                    ? C.accentLight
-                    : "transparent";
+                  padding: "8px 14px 4px",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: C.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  borderTop: `1px solid ${C.border}`,
                 }}
               >
-                {isActive && (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={C.accent}
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                Wk {week.week_number} — {week.title}
+              </div>
+
+              {/* Lessons */}
+              {week.lessons.map((lesson) => {
+                const isActive = lesson.id === selectedId;
+                return (
+                  <button
+                    key={lesson.id}
+                    onClick={() => {
+                      onChange(lesson.id, lesson.title);
+                      setOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "100%",
+                      padding: "8px 14px 8px 22px",
+                      border: "none",
+                      background: isActive ? C.accentLight : "transparent",
+                      color: isActive ? C.accent : C.text,
+                      fontSize: 13,
+                      fontWeight: isActive ? 800 : 600,
+                      fontFamily: "'Nunito', sans-serif",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.background = C.bg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = isActive
+                        ? C.accentLight
+                        : "transparent";
+                    }}
                   >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-                {opt.label}
-              </button>
-            );
-          })}
+                    {isActive && <CheckIcon />}
+                    {lesson.title}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke={C.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
   );
 }
 
