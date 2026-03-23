@@ -8,7 +8,7 @@ import useLessonPdf from "../../useLessonPdf";
 import QuizMiniCard from "../quizzes/QuizMiniCard";
 import AddQuizModal from "../quizzes/AddQuizModal";
 import AddQuizSheet from "../AddQuizSheet";
-import { fetchQuizzes } from "../../lib/api";
+import { fetchQuizzes, updateLesson } from "../../lib/api";
 import { relativeTime } from "../../utils/helpers";
 
 const mdComponents = {
@@ -119,6 +119,55 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
   const [panelDragging, setPanelDragging] = useState(false);
   const [panelDeleting, setPanelDeleting] = useState(false);
   const [panelTab, setPanelTab] = useState("pdf"); // "pdf" | "quizzes"
+
+  // Title editing state
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(lesson.title);
+  const [titleSaving, setTitleSaving] = useState(false);
+  const titleInputRef = useRef(null);
+  const lastTapRef = useRef(0);
+
+  const handleTitleDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 350) {
+      startEditTitle();
+    }
+    lastTapRef.current = now;
+  };
+
+  const startEditTitle = () => {
+    setTitleDraft(lesson.title);
+    setEditingTitle(true);
+  };
+
+  const cancelEditTitle = () => {
+    setEditingTitle(false);
+    setTitleDraft(lesson.title);
+  };
+
+  const saveTitle = async () => {
+    const trimmed = titleDraft.trim();
+    if (!trimmed || trimmed === lesson.title) { cancelEditTitle(); return; }
+    setTitleSaving(true);
+    try {
+      await updateLesson(lesson.id, { title: trimmed });
+      lesson.title = trimmed;
+      setEditingTitle(false);
+    } catch (e) {
+      console.error("Failed to update title:", e);
+    } finally {
+      setTitleSaving(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === "Enter") { e.preventDefault(); saveTitle(); }
+    if (e.key === "Escape") cancelEditTitle();
+  };
+
+  useEffect(() => {
+    if (editingTitle && titleInputRef.current) titleInputRef.current.focus();
+  }, [editingTitle]);
 
   // Quiz state
   const [quizzes, setQuizzes] = useState([]);
@@ -518,9 +567,72 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
             </button>
 
             {/* Title */}
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: C.text, lineHeight: 1.3, marginBottom: 8 }}>
-              {lesson.title}
-            </h1>
+            {editingTitle ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <input
+                  ref={titleInputRef}
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  disabled={titleSaving}
+                  style={{
+                    flex: 1, fontSize: 24, fontWeight: 900, color: C.text, lineHeight: 1.3,
+                    fontFamily: "'Nunito', sans-serif",
+                    border: `1.5px solid ${C.accent}`, borderRadius: 8,
+                    padding: "4px 10px", outline: "none", background: "#F8FFFE",
+                    opacity: titleSaving ? 0.6 : 1,
+                  }}
+                />
+                {/* Save */}
+                <button onClick={saveTitle} disabled={titleSaving} style={{
+                  background: "none", border: "none", cursor: "pointer", padding: 4,
+                  color: C.accent, display: "flex", alignItems: "center",
+                  opacity: titleSaving ? 0.4 : 1,
+                }}
+                title="Save"
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = titleSaving ? "0.4" : "1")}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+                {/* Cancel */}
+                <button onClick={cancelEditTitle} disabled={titleSaving} style={{
+                  background: "none", border: "none", cursor: "pointer", padding: 4,
+                  color: C.muted, display: "flex", alignItems: "center",
+                }}
+                title="Cancel"
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div
+                className="lesson-title-row"
+                style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
+                onTouchEnd={handleTitleDoubleTap}
+              >
+                <h1 style={{ fontSize: 24, fontWeight: 900, color: C.text, lineHeight: 1.3, margin: 0 }}>
+                  {lesson.title}
+                </h1>
+                <button className="lesson-title-edit-btn" onClick={startEditTitle} style={{
+                  background: "none", border: "none", cursor: "pointer", padding: 4,
+                  color: C.muted, display: "flex", alignItems: "center", flexShrink: 0,
+                  opacity: 0, transition: "opacity 0.15s",
+                }}
+                title="Edit title"
+                onMouseEnter={(e) => { e.currentTarget.style.color = C.accent; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Context line */}
             {weekContext && (

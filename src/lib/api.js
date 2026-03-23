@@ -93,6 +93,20 @@ export async function createLesson(week_id, title, markdown_content) {
   return res.json();
 }
 
+export async function updateLesson(lessonId, fields) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/lessons/${lessonId}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to update lesson");
+  }
+  return res.json();
+}
+
 export async function deleteLesson(lessonId) {
   const headers = await authHeaders();
   const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE", headers });

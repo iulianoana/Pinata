@@ -100,6 +100,8 @@ export const injectStyles = () => {
       .lesson-reader-panel-open.lesson-reader-container { max-width: 100% !important; }
       .lessons-footer-text { display: none; }
     }
+    /* Title edit pen — show on hover (desktop only) */
+    .lesson-title-row:hover .lesson-title-edit-btn { opacity: 1 !important; }
     @media (min-width: 1400px) {
       .app-container { padding-left: 60px !important; padding-right: 60px !important; }
       .desktop-header-fixed { padding-left: 60px !important; padding-right: 60px !important; }
