@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "Piñata - Habla español?",
   description: "Spanish quiz practice app",

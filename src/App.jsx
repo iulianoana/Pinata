@@ -5,7 +5,7 @@ import { supabase } from "./lib/supabase.js";
 import { flush, usePendingCount } from "./lib/syncQueue.js";
 import { prefetchAll } from "./lib/offline-cache.js";
 import { fetchWeeks, fetchLessons, fetchQuizzes } from "./lib/api.js";
-import { injectStyles, C } from "./styles/theme";
+import { C } from "./styles/theme";
 import LoginScreen from "./screens/LoginScreen";
 import QuizzesScreen from "./screens/QuizzesScreen";
 import HistoryScreen from "./screens/HistoryScreen";
@@ -24,7 +24,7 @@ export default function App() {
   const history = useQuizHistory(session);
   const pendingCount = usePendingCount();
 
-  useEffect(() => { injectStyles(); }, []);
+
 
   useEffect(() => {
     supabase.auth.getSession()

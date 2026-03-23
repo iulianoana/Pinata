@@ -81,40 +81,7 @@ async function getAuthHeaders() {
   };
 }
 
-// ─── Inject Carolina CSS ───────────────────────────────────────
-function injectCarolinaStyles() {
-  if (document.getElementById("carolina-css")) return;
-  const s = document.createElement("style");
-  s.id = "carolina-css";
-  s.textContent = `
-    @keyframes carolinaDots {
-      0%, 20% { opacity: 0.2; }
-      50% { opacity: 1; }
-      80%, 100% { opacity: 0.2; }
-    }
-    .carolina-dot {
-      display: inline-block; width: 6px; height: 6px;
-      border-radius: 50%; background: #9aaa9f;
-      margin: 0 2px; animation: carolinaDots 1.4s infinite both;
-    }
-    .carolina-dot:nth-child(2) { animation-delay: 0.2s; }
-    .carolina-dot:nth-child(3) { animation-delay: 0.4s; }
-    .carolina-md p { margin: 0 0 8px; }
-    .carolina-md p:last-child { margin-bottom: 0; }
-    .carolina-md ul, .carolina-md ol { margin: 4px 0; padding-left: 20px; }
-    .carolina-md li { margin: 2px 0; }
-    .carolina-md code { background: #f0f4f2; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-    .carolina-md table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
-    .carolina-md th, .carolina-md td { border: 1px solid #e2e8e4; padding: 4px 8px; }
-    .carolina-md th { background: #f0faf5; font-weight: 700; }
-    .carolina-back-btn { display: none !important; }
-    @media (max-width: 767px) {
-      .carolina-back-btn { display: flex !important; }
-      .carolina-bubble { max-width: 85% !important; }
-    }
-  `;
-  document.head.appendChild(s);
-}
+// Carolina CSS styles are now in app/globals.css
 
 // ─── Carolina Avatar ───────────────────────────────────────────
 function CarolinaAvatar({ size = 26 }) {
@@ -996,8 +963,7 @@ export default function CarolinaScreen({ session }) {
   const messagesContainerRef = useRef(null);
   const isUserScrolledRef = useRef(false);
 
-  // Inject styles
-  useEffect(() => { injectCarolinaStyles(); }, []);
+  // Carolina styles loaded from app/globals.css
 
   // Detect mobile
   useEffect(() => {

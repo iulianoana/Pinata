@@ -8,38 +8,7 @@ import GenerateFromPDFProcess from "./GenerateFromPDFProcess";
 import GenerateFromPDFDone from "./GenerateFromPDFDone";
 import GenerateFromPDFFailed from "./GenerateFromPDFFailed";
 
-// Inject dialog styles once
-if (typeof document !== "undefined" && !document.getElementById("gpdf-styles")) {
-  const s = document.createElement("style");
-  s.id = "gpdf-styles";
-  s.textContent = `
-    .gpdf-overlay{position:fixed;inset:0;z-index:9999;background:${C.overlay};animation:overlayFade 0.2s ease-out;display:flex;align-items:center;justify-content:center}
-    .gpdf-dialog{position:fixed;inset:0;width:100%;max-width:100%;max-height:100%;border-radius:0;background:#fff;display:flex;flex-direction:column;z-index:10000;animation:sheetUp 0.3s ease-out both}
-    .gpdf-header{padding:max(16px,env(safe-area-inset-top,16px)) 20px 14px;flex-shrink:0}
-    .gpdf-body{flex:1;overflow-y:auto;padding:20px 20px 24px;-webkit-overflow-scrolling:touch}
-    .gpdf-fade{animation:gpdfFadeUp 0.25s ease-out both}
-    .gpdf-mobile-only{display:inline}
-    .gpdf-desktop-only{display:none}
-    .gpdf-footer{display:flex;gap:10px;margin-top:20px}
-    .gpdf-footer-cancel{flex:none}
-    .gpdf-footer-cta{flex:1}
-    .gpdf-shimmer{background:linear-gradient(90deg,#e8ecf0 25%,#f5f5f5 50%,#e8ecf0 75%);background-size:600px 100%;animation:shimmer 1.8s infinite ease-in-out;border-radius:4px}
-    @keyframes gpdfFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes gpdfSpin{to{transform:rotate(360deg)}}
-    .gpdf-trigger-btn{font-size:12px;padding:5px 12px}
-    @media(min-width:768px){
-      .gpdf-dialog{position:relative;inset:auto;border-radius:20px;width:calc(100% - 48px);max-width:480px;max-height:85vh;box-shadow:0 8px 32px rgba(0,60,50,0.15);animation:slideUp 0.3s ease-out both}
-      .gpdf-header{padding:20px 24px 14px}
-      .gpdf-body{padding:20px 24px 24px}
-      .gpdf-mobile-only{display:none!important}
-      .gpdf-desktop-only{display:inline!important}
-      .gpdf-footer-cancel{flex:1}
-      .gpdf-footer-cta{flex:2}
-      .gpdf-trigger-btn{font-size:13px!important;padding:6px 14px!important}
-    }
-  `;
-  document.head.appendChild(s);
-}
+// Dialog styles are now in app/globals.css
 
 export default function GenerateFromPDFDialog({ open, onClose, unitId, onComplete }) {
   const navigate = useNavigate();

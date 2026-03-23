@@ -1,0 +1,335 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Variables ─────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Main palette (from C object) */
+    --color-bg: #FFFFFF;
+    --color-card: #FFFFFF;
+    --color-accent: #00B4A0;
+    --color-accent-light: #E0F5F1;
+    --color-accent-hover: #008F7E;
+    --color-text: #1A2F2B;
+    --color-muted: #5E8078;
+    --color-success: #00C48C;
+    --color-success-light: #E0F8F0;
+    --color-error: #FF6584;
+    --color-error-light: #FFF0F3;
+    --color-border: #D4F0EB;
+    --color-input-bg: #F0FAF8;
+    --color-overlay: rgba(26, 47, 43, 0.45);
+    --color-quiz: #8B5CF6;
+    --color-quiz-light: #EDE9FE;
+    --color-quiz-hover: #7C3AED;
+    --color-unit-quiz: #3B82F6;
+    --color-unit-quiz-light: #DBEAFE;
+    --color-amber: #F59E0B;
+    --color-amber-light: #FFFBEB;
+    --color-amber-dark: #92400E;
+
+    /* Carolina palette (from K object in CarolinaScreen) */
+    --color-carolina-bg: #f0faf5;
+    --color-carolina-primary: #3ABFA0;
+    --color-carolina-primary-dark: #0F6E56;
+    --color-carolina-active-bg: #E8F8F3;
+    --color-carolina-active-border: #b8e8d6;
+    --color-carolina-bubble-border: #e2e8e4;
+    --color-carolina-error-text: #E24B4A;
+    --color-carolina-correction-text: #1D9E75;
+    --color-carolina-pill-bg: #fff3e0;
+    --color-carolina-pill-text: #854F0B;
+    --color-carolina-input-bg: #f5f5f0;
+    --color-carolina-timestamp: #9aaa9f;
+
+    /* Sidebar palette (from K object in DesktopSidebar) */
+    --color-sidebar-active-bg: #E8F8F3;
+    --color-sidebar-active-text: #0F6E56;
+    --color-sidebar-active-icon: #1D9E75;
+    --color-sidebar-star: #EF9F27;
+
+    /* shadcn/ui expected variables (mapped to our palette) */
+    --background: 0 0% 100%;
+    --foreground: 162 28% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 162 28% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 162 28% 15%;
+    --primary: 172 100% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 52% 93%;
+    --secondary-foreground: 162 28% 15%;
+    --muted: 160 52% 93%;
+    --muted-foreground: 161 16% 42%;
+    --accent: 160 52% 93%;
+    --accent-foreground: 162 28% 15%;
+    --destructive: 348 100% 70%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 163 52% 88%;
+    --input: 163 52% 88%;
+    --ring: 172 100% 35%;
+    --radius: 0.75rem;
+  }
+}
+
+/* ─── Base Reset & Globals (from injectStyles) ─────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    background: #FFFFFF;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1A2F2B;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+  }
+  input[type="text"], textarea {
+    font-family: 'Nunito', sans-serif;
+  }
+  ::placeholder {
+    color: #B0E0D8;
+  }
+  mark {
+    background: #B0E0D8;
+    color: #1A2F2B;
+    padding: 1px 2px;
+    border-radius: 3px;
+  }
+}
+
+/* ─── Animation Utility Classes (from injectStyles) ────────── */
+@layer utilities {
+  .fade-in { animation: fadeIn 0.4s ease-out both; }
+  .slide-in-right { animation: slideInRight 0.3s ease-out both; }
+  .slide-in-left { animation: slideInLeft 0.3s ease-out both; }
+  .slide-up { animation: slideUp 0.3s ease-out both; }
+  .score-anim { animation: countUp 0.6s 0.5s ease-out both; }
+  .skeleton {
+    background: linear-gradient(90deg, #D4F0EB 25%, #E8F7F4 50%, #D4F0EB 75%);
+    background-size: 600px 100%;
+    animation: shimmer 1.8s infinite ease-in-out;
+    border-radius: 8px;
+  }
+  .skeleton-glow { animation: skeletonGlow 2s infinite ease-in-out; }
+  .progress-indeterminate { animation: progressIndeterminate 1.5s ease-in-out infinite; }
+}
+
+/* ─── Safe Area (from injectStyles) ────────────────────────── */
+@layer utilities {
+  .safe-top { padding-top: max(16px, env(safe-area-inset-top, 16px)) !important; }
+  .safe-top-fixed { top: env(safe-area-inset-top, 12px) !important; }
+}
+
+/* ─── Layout Classes (from injectStyles) ───────────────────── */
+@layer components {
+  .app-container { max-width: 520px; margin: 0 auto; width: 100%; }
+  .app-header-inner { max-width: 520px; margin: 0 auto; }
+  .quiz-grid { display: flex; flex-direction: column; gap: 12px; }
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+}
+
+@media (min-width: 768px) {
+  .app-container { max-width: 700px; }
+  .app-header-inner { max-width: 700px; }
+  .quiz-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+@media (min-width: 1200px) {
+  .app-container { max-width: 860px; }
+  .app-header-inner { max-width: 860px; }
+}
+
+/* ─── Desktop Sidebar Layout (from injectStyles) ──────────── */
+.desktop-sidebar { display: none !important; }
+.desktop-in-progress-pill { display: none !important; }
+.add-quiz-btn-desktop { display: none; }
+.settings-cog-mobile { display: flex; }
+
+/* ─── Lessons Feature (from injectStyles) ─────────────────── */
+.new-week-btn-desktop { display: none !important; }
+.fab-new-week { display: flex; }
+.lesson-delete-hover { display: none; }
+
+/* Lesson Reader PDF panel (default = mobile) */
+.pdf-side-panel-desktop { display: none !important; }
+.pdf-section-inline { display: block; }
+
+/* Title edit pen — show on hover (desktop only) */
+.lesson-title-row:hover .lesson-title-edit-btn { opacity: 1 !important; }
+
+@media (min-width: 1024px) {
+  .desktop-sidebar { display: flex !important; }
+  .desktop-main { margin-left: 220px; max-width: calc(100% - 220px); }
+  .desktop-header-fixed { left: 220px !important; margin-left: 0 !important; padding-left: 40px !important; padding-right: 40px !important; }
+  .mobile-tab-bar { display: none !important; }
+  .app-container { width: auto; max-width: 100%; padding-left: 40px !important; padding-right: 40px !important; }
+  .app-header-inner { max-width: 100%; }
+  .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .history-list { max-width: 700px; }
+  .desktop-in-progress-pill { display: inline-block !important; }
+  .add-quiz-btn-mobile { display: none !important; }
+  .add-quiz-btn-desktop { display: flex !important; }
+  .quiz-home-btn { display: none !important; }
+  .settings-cog-mobile { display: none !important; }
+  .quiz-desktop-header { display: flex !important; }
+
+  /* Lessons desktop overrides */
+  .fab-new-week { display: none !important; }
+  .new-week-btn-desktop { display: flex !important; }
+  .lesson-delete-hover { display: inline !important; }
+  .lesson-reader-container { padding-top: 8px !important; max-width: 860px; }
+  .lesson-reader-wrapper { height: 100vh; overflow: hidden; }
+  .lesson-reader-root { height: 100% !important; min-height: 0 !important; display: flex !important; flex-direction: column; }
+  .lesson-reader-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+  .lesson-reader-scroll { flex: 1; overflow-y: auto; min-width: 0; }
+  .pdf-side-panel-desktop { display: block !important; flex-shrink: 0; }
+  .pdf-section-inline { display: none !important; }
+  .quiz-sidebar-desktop { display: flex !important; flex-direction: column; flex-shrink: 0; width: 320px; overflow-y: auto; border-left: 1px solid #D4F0EB; background: #FFFFFF; }
+  .quiz-section-mobile { display: none !important; }
+  .lesson-reader-panel-open.lesson-reader-container { max-width: 100% !important; }
+  .lessons-footer-text { display: none; }
+}
+
+@media (min-width: 1400px) {
+  .app-container { padding-left: 60px !important; padding-right: 60px !important; }
+  .desktop-header-fixed { padding-left: 60px !important; padding-right: 60px !important; }
+}
+
+/* ─── Quizzes Page (from injectStyles) ─────────────────────── */
+.quizzes-page { padding: 16px 20px 100px; }
+.quizzes-grid { display: flex; flex-direction: column; gap: 12px; }
+.quizzes-meta-text { display: none; }
+.filter-chips-scroll { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.filter-chips-scroll::-webkit-scrollbar { display: none; }
+.mobile-nav-bar { display: flex; }
+
+@media (min-width: 768px) {
+  .quizzes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+@media (min-width: 1024px) {
+  .quizzes-page { padding: 16px 40px 40px; }
+  .quizzes-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .quizzes-meta-text { display: inline !important; }
+  .mobile-nav-bar { display: none !important; }
+}
+
+@media (min-width: 1400px) {
+  .quizzes-page { padding: 16px 60px 40px; }
+}
+
+/* ─── Lessons Page (from injectStyles) ─────────────────────── */
+.lessons-page { padding: 0 16px 96px; }
+.unit-pill-nav { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.unit-pill-nav::-webkit-scrollbar { display: none; }
+.unit-divider-band { display: block; height: 8px; background: #F1F5F9; border-top: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; margin: 0 -16px; }
+.lesson-row-v2 { display: flex; align-items: flex-start; padding: 12px 8px 12px 54px; gap: 10px; cursor: pointer; border-bottom: 1px solid #D4F0EB; transition: background 0.12s; position: relative; }
+.lesson-row-v2:hover { background: #F8FDFC; }
+.lesson-drag-v2 { display: none; }
+.lesson-badges-d { display: none; }
+.lesson-actions-d { display: none; }
+.lesson-badges-m { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.lesson-dotmenu-m { display: flex; align-items: flex-start; flex-shrink: 0; }
+.batch-upload-v2 { display: none !important; }
+.toolbar-newunit-v2 { display: none !important; }
+.add-lesson-ghost { padding: 12px 8px 12px 54px; }
+
+@media (min-width: 768px) {
+  .unit-divider-band { display: none; }
+  .lesson-row-v2 { display: grid; grid-template-columns: 24px 1fr 180px 80px; padding: 10px 12px; align-items: center; }
+  .lesson-drag-v2 { display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; cursor: grab; }
+  .lesson-row-v2:hover .lesson-drag-v2 { opacity: 1; }
+  .lesson-badges-d { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .lesson-badges-m { display: none !important; }
+  .lesson-actions-d { display: flex; align-items: center; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity 0.15s; }
+  .lesson-row-v2:hover .lesson-actions-d { opacity: 1; }
+  .lesson-dotmenu-m { display: none !important; }
+  .batch-upload-v2 { display: flex !important; }
+  .toolbar-newunit-v2 { display: flex !important; }
+  .add-lesson-ghost { padding: 10px 12px 10px 46px; }
+}
+
+@media (min-width: 1024px) {
+  .lessons-page { padding: 0 40px 40px; }
+}
+
+@media (min-width: 1400px) {
+  .lessons-page { padding: 0 60px 40px; }
+}
+
+/* ─── GenerateFromPDF Dialog (from #gpdf-styles) ──────────── */
+.gpdf-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(26, 47, 43, 0.45);
+  animation: overlayFade 0.2s ease-out;
+  display: flex; align-items: center; justify-content: center;
+}
+.gpdf-dialog {
+  position: fixed; inset: 0; width: 100%; max-width: 100%; max-height: 100%;
+  border-radius: 0; background: #fff;
+  display: flex; flex-direction: column;
+  z-index: 10000; animation: sheetUp 0.3s ease-out both;
+}
+.gpdf-header { padding: max(16px, env(safe-area-inset-top, 16px)) 20px 14px; flex-shrink: 0; }
+.gpdf-body { flex: 1; overflow-y: auto; padding: 20px 20px 24px; -webkit-overflow-scrolling: touch; }
+.gpdf-fade { animation: gpdfFadeUp 0.25s ease-out both; }
+.gpdf-mobile-only { display: inline; }
+.gpdf-desktop-only { display: none; }
+.gpdf-footer { display: flex; gap: 10px; margin-top: 20px; }
+.gpdf-footer-cancel { flex: none; }
+.gpdf-footer-cta { flex: 1; }
+.gpdf-shimmer {
+  background: linear-gradient(90deg, #e8ecf0 25%, #f5f5f5 50%, #e8ecf0 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.8s infinite ease-in-out;
+  border-radius: 4px;
+}
+.gpdf-trigger-btn { font-size: 12px; padding: 5px 12px; }
+
+@media (min-width: 768px) {
+  .gpdf-dialog {
+    position: relative; inset: auto; border-radius: 20px;
+    width: calc(100% - 48px); max-width: 480px; max-height: 85vh;
+    box-shadow: 0 8px 32px rgba(0, 60, 50, 0.15);
+    animation: slideUp 0.3s ease-out both;
+  }
+  .gpdf-header { padding: 20px 24px 14px; }
+  .gpdf-body { padding: 20px 24px 24px; }
+  .gpdf-mobile-only { display: none !important; }
+  .gpdf-desktop-only { display: inline !important; }
+  .gpdf-footer-cancel { flex: 1; }
+  .gpdf-footer-cta { flex: 2; }
+  .gpdf-trigger-btn { font-size: 13px !important; padding: 6px 14px !important; }
+}
+
+/* ─── Carolina Chat (from #carolina-css) ──────────────────── */
+.carolina-dot {
+  display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; background: #9aaa9f;
+  margin: 0 2px; animation: carolinaDots 1.4s infinite both;
+}
+.carolina-dot:nth-child(2) { animation-delay: 0.2s; }
+.carolina-dot:nth-child(3) { animation-delay: 0.4s; }
+.carolina-md p { margin: 0 0 8px; }
+.carolina-md p:last-child { margin-bottom: 0; }
+.carolina-md ul, .carolina-md ol { margin: 4px 0; padding-left: 20px; }
+.carolina-md li { margin: 2px 0; }
+.carolina-md code { background: #f0f4f2; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+.carolina-md table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+.carolina-md th, .carolina-md td { border: 1px solid #e2e8e4; padding: 4px 8px; }
+.carolina-md th { background: #f0faf5; font-weight: 700; }
+.carolina-back-btn { display: none !important; }
+
+@media (max-width: 767px) {
+  .carolina-back-btn { display: flex !important; }
+  .carolina-bubble { max-width: 85% !important; }
+}
