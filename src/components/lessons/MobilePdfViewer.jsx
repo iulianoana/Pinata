@@ -93,6 +93,17 @@ export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, on
 
     async function renderPdf() {
       try {
+        // Polyfill Map.getOrInsertComputed — used by pdfjs-dist v5.x,
+        // not yet supported in Safari / WebKit (iPad, iPhone).
+        if (!Map.prototype.getOrInsertComputed) {
+          Map.prototype.getOrInsertComputed = function (key, cb) {
+            if (this.has(key)) return this.get(key);
+            const v = cb(key);
+            this.set(key, v);
+            return v;
+          };
+        }
+
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
