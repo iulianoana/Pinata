@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { C } from "../../styles/theme";
+import { cn } from "@/lib/utils";
 import { shuffle } from "../../utils/helpers";
 
 export default function Classify({ q, value, onChange }) {
@@ -90,53 +90,51 @@ export default function Classify({ q, value, onChange }) {
     onChange({ ...value, placements: np, _selected: null });
   };
 
-  const chip = (isSel, isPlaced) => ({
-    display: "inline-flex", alignItems: "center", padding: isPlaced ? "8px 14px" : "10px 18px",
-    borderRadius: 20, fontSize: isPlaced ? 13 : 14, fontWeight: 600, cursor: "pointer",
-    transition: "all 0.2s", userSelect: "none", minHeight: 44,
-    border: `2.5px solid ${isSel || isPlaced ? C.accent : C.border}`,
-    background: isSel || isPlaced ? C.accentLight : C.card,
-    color: isSel || isPlaced ? C.accentHover : C.text,
-  });
+  const chipClass = (isSel, isPlaced) => cn(
+    "inline-flex items-center rounded-[20px] font-semibold cursor-pointer transition-all select-none min-h-[44px] border-[2.5px]",
+    isPlaced ? "px-3.5 py-2 text-[13px]" : "px-[18px] py-2.5 text-sm",
+    isSel || isPlaced ? "border-accent bg-accent-light text-accent-hover" : "border-border bg-white text-text"
+  );
 
   return (
     <div>
       {unplaced.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+        <div className="flex flex-wrap gap-2 mb-5">
           {unplaced.map((item) => (
             <span key={item} onClick={() => selectItem(item)} onTouchStart={(e) => handleTouchStart(item, e)}
               onMouseDown={(e) => handleMouseDown(item, e)}
-              style={{ ...chip(selected === item, false), opacity: dragging === item ? 0.3 : 1, cursor: "grab" }}>
+              className={chipClass(selected === item, false)}
+              style={{ opacity: dragging === item ? 0.3 : 1, cursor: "grab" }}>
               {item}
             </span>
           ))}
         </div>
       )}
       {selected && !dragging && (
-        <p style={{ color: C.accent, fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+        <p className="text-accent text-[13px] font-semibold mb-3">
           Tap a category below to place "{selected}"
         </p>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="flex flex-col gap-3">
         {Object.keys(q.categories).map((cat) => (
           <div key={cat} ref={(el) => (catRefs.current[cat] = el)}>
             <div onClick={() => placeInCategory(cat)}
               style={{
-                border: `2.5px ${placements[cat]?.length ? "solid" : "dashed"} ${hoveredCat === cat ? C.accent : selected ? C.accent + "88" : C.border}`,
+                border: `2.5px ${placements[cat]?.length ? "solid" : "dashed"} ${hoveredCat === cat ? "var(--color-accent)" : selected ? "rgba(0,180,160,0.53)" : "var(--color-border)"}`,
                 borderRadius: 14, padding: 14, minHeight: 56,
                 cursor: selected ? "pointer" : "default", transition: "all 0.2s",
-                background: hoveredCat === cat ? C.accentLight : selected ? `${C.accentLight}44` : "transparent",
+                background: hoveredCat === cat ? "var(--color-accent-light)" : selected ? "rgba(224,245,241,0.27)" : "transparent",
                 transform: hoveredCat === cat ? "scale(1.01)" : "none",
               }}>
-              <p style={{
-                fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase",
-                letterSpacing: 1, marginBottom: placements[cat]?.length ? 10 : 0,
-              }}>{cat}</p>
+              <p className={cn(
+                "text-[11px] font-bold text-muted uppercase tracking-wider",
+                placements[cat]?.length && "mb-2.5"
+              )}>{cat}</p>
               {placements[cat]?.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div className="flex flex-wrap gap-1.5">
                   {placements[cat].map((item) => (
                     <span key={item} onClick={(e) => { e.stopPropagation(); removeFromCategory(item, cat); }}
-                      style={chip(false, true)}>{item} ×</span>
+                      className={chipClass(false, true)}>{item} ×</span>
                   ))}
                 </div>
               )}
@@ -149,7 +147,7 @@ export default function Classify({ q, value, onChange }) {
           position: "fixed", left: dragPos.x - dragOffset.current.x, top: dragPos.y - dragOffset.current.y,
           zIndex: 9999, pointerEvents: "none", display: "inline-flex", alignItems: "center",
           padding: "10px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600,
-          background: C.accentLight, border: `2.5px solid ${C.accent}`, color: C.accentHover,
+          background: "var(--color-accent-light)", border: "2.5px solid var(--color-accent)", color: "var(--color-accent-hover)",
           boxShadow: "0 8px 24px rgba(0,60,50,0.15)", transform: "scale(1.05)", whiteSpace: "nowrap",
         }}>{dragging}</div>,
         document.body

@@ -2,7 +2,7 @@ import VocabularyCard from "./VocabularyCard";
 
 export default function VocabularyList({ words, onEdit, onRerunAI, onDelete }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {words.map((word) => (
         <VocabularyCard
           key={word.id}

@@ -1,26 +1,27 @@
-import { C } from "../styles/theme";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export default function SkeletonCard({ variant = "default" }) {
   return (
-    <div className="skeleton-glow" style={{
-      background: C.card, borderRadius: 16, padding: 16,
-      border: variant === "progress" ? `2.5px solid ${C.accentLight}` : "1px solid transparent",
-    }}>
+    <div className={cn(
+      "animate-skeleton-glow bg-white rounded-2xl p-4",
+      variant === "progress" ? "border-[2.5px] border-accent-light" : "border border-transparent"
+    )}>
       {variant === "progress" && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <div className="skeleton" style={{ width: 80, height: 22, borderRadius: 20 }} />
+        <div className="flex justify-end mb-2">
+          <Skeleton className="w-20 h-[22px] rounded-[20px]" />
         </div>
       )}
-      <div className="skeleton" style={{ width: "70%", height: 18, marginBottom: 8 }} />
-      <div className="skeleton" style={{ width: "45%", height: 13, marginBottom: variant === "progress" ? 14 : 4 }} />
+      <Skeleton className="w-[70%] h-[18px] mb-2" />
+      <Skeleton className={cn("w-[45%] h-[13px]", variant === "progress" ? "mb-3.5" : "mb-1")} />
       {variant === "progress" && (
         <>
-          <div style={{ display: "flex", gap: 3, padding: 3, background: "#D4F0EB", borderRadius: 10, height: 14, marginBottom: 14 }}>
+          <div className="flex gap-[3px] p-[3px] bg-border rounded-[10px] h-3.5 mb-3.5">
             {Array.from({ length: 12 }, (_, i) => (
-              <div key={i} className="skeleton" style={{ flex: 1, borderRadius: 7 }} />
+              <Skeleton key={i} className="flex-1 rounded-[7px]" />
             ))}
           </div>
-          <div className="skeleton" style={{ width: "100%", height: 44, borderRadius: 14 }} />
+          <Skeleton className="w-full h-11 rounded-[14px]" />
         </>
       )}
     </div>

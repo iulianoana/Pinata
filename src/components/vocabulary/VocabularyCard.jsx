@@ -1,35 +1,39 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { C } from "../../styles/theme";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 const mdComponents = {
   p: ({ children }) => (
-    <p style={{ fontSize: 14, color: "#3A5A52", lineHeight: 1.7, margin: "4px 0", fontWeight: 600 }}>{children}</p>
+    <p className="text-sm text-[#3A5A52] leading-[1.7] my-1 font-semibold">{children}</p>
   ),
   strong: ({ children }) => (
-    <strong style={{ fontWeight: 800, color: C.text }}>{children}</strong>
+    <strong className="font-extrabold text-text">{children}</strong>
   ),
   em: ({ children }) => (
-    <em style={{ color: C.accent, fontStyle: "italic" }}>{children}</em>
+    <em className="text-accent italic">{children}</em>
   ),
   ul: ({ children }) => (
-    <ul style={{ paddingLeft: 20, margin: "4px 0", fontSize: 14, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ul>
+    <ul className="pl-5 my-1 text-sm text-[#3A5A52] leading-[1.7] font-semibold">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol style={{ paddingLeft: 20, margin: "4px 0", fontSize: 14, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ol>
+    <ol className="pl-5 my-1 text-sm text-[#3A5A52] leading-[1.7] font-semibold">{children}</ol>
   ),
   li: ({ children }) => (
-    <li style={{ marginBottom: 2 }}>{children}</li>
+    <li className="mb-0.5">{children}</li>
   ),
 };
 
 export default function VocabularyCard({ word, onEdit, onRerunAI, onDelete }) {
   const [englishOpen, setEnglishOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
   const contentRef = useRef(null);
-  const menuRef = useRef(null);
 
   // Measure content height for animation
   useEffect(() => {
@@ -38,82 +42,34 @@ export default function VocabularyCard({ word, onEdit, onRerunAI, onDelete }) {
     }
   }, [word.explanation_en, englishOpen]);
 
-  // Close menu on outside click
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
-
   return (
-    <div
-      className="fade-in"
-      style={{
-        background: C.inputBg, borderRadius: 12, padding: "16px 18px",
-        border: `1px solid ${C.border}`,
-      }}
-    >
+    <div className="fade-in bg-input-bg rounded-xl py-4 px-[18px] border border-border">
       {/* Header: word + AI badge + menu */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-        <h3 style={{ fontSize: 20, fontWeight: 800, color: C.text, margin: 0, lineHeight: 1.3 }}>
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="text-xl font-extrabold text-text m-0 leading-[1.3]">
           {word.word}
         </h3>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div className="flex items-center gap-2 shrink-0">
           {word.ai_generated && (
-            <span style={{
-              background: C.accent, color: "white", fontSize: 11, fontWeight: 800,
-              padding: "2px 8px", borderRadius: 6, letterSpacing: "0.03em",
-            }}>AI</span>
+            <span className="bg-accent text-white text-[11px] font-extrabold px-2 py-0.5 rounded-md tracking-[0.03em]">AI</span>
           )}
           {/* Three-dot menu */}
-          <div ref={menuRef} style={{ position: "relative" }}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                padding: "2px 4px", color: C.muted, fontSize: 18,
-                fontWeight: 800, lineHeight: 1, display: "flex",
-              }}
-            >⋮</button>
-            {menuOpen && (
-              <div style={{
-                position: "absolute", top: "100%", right: 0, marginTop: 4,
-                background: C.card, borderRadius: 10, border: `1px solid ${C.border}`,
-                boxShadow: "0 4px 16px rgba(0,60,50,0.12)", zIndex: 10,
-                minWidth: 140, overflow: "hidden",
-              }}>
-                {[
-                  { label: "Edit", action: onEdit },
-                  { label: "Re-run AI", action: onRerunAI },
-                  { label: "Delete", action: onDelete, color: C.error },
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={() => { setMenuOpen(false); item.action(); }}
-                    style={{
-                      display: "block", width: "100%", padding: "10px 14px",
-                      background: "none", border: "none", textAlign: "left",
-                      fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
-                      color: item.color || C.text, cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = C.inputBg; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="bg-transparent border-none cursor-pointer px-1 py-0.5 text-muted text-lg font-extrabold leading-none flex">⋮</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[140px] rounded-[10px] border-border shadow-[0_4px_16px_rgba(0,60,50,0.12)]">
+              <DropdownMenuItem onClick={onEdit} className="px-3.5 py-2.5 text-sm font-bold font-nunito text-text cursor-pointer">Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={onRerunAI} className="px-3.5 py-2.5 text-sm font-bold font-nunito text-text cursor-pointer">Re-run AI</DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="px-3.5 py-2.5 text-sm font-bold font-nunito text-error cursor-pointer">Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {/* Spanish explanation */}
       {word.explanation_es && (
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-3">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
             {word.explanation_es}
           </ReactMarkdown>
@@ -123,17 +79,12 @@ export default function VocabularyCard({ word, onEdit, onRerunAI, onDelete }) {
       {/* English collapsible section */}
       {word.explanation_en && (
         <>
-          <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 10 }}>
+          <div className="border-t border-border mt-1 pt-2.5">
             <button
               onClick={() => setEnglishOpen(!englishOpen)}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-                color: C.muted, padding: 0, width: "100%",
-              }}
+              className="flex items-center gap-2 bg-transparent border-none cursor-pointer font-nunito text-[13px] font-bold text-muted p-0 w-full"
             >
-              <span style={{ fontSize: 14 }}>🇬🇧</span>
+              <span className="text-sm">🇬🇧</span>
               <span>{englishOpen ? "English" : "Show English"}</span>
               <svg
                 width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -153,7 +104,7 @@ export default function VocabularyCard({ word, onEdit, onRerunAI, onDelete }) {
               overflow: "hidden",
               transition: "max-height 0.3s ease",
             }}>
-              <div ref={contentRef} style={{ paddingTop: 8 }}>
+              <div ref={contentRef} className="pt-2">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                   {word.explanation_en}
                 </ReactMarkdown>

@@ -12,7 +12,7 @@ export default function Confetti() {
     })), []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, overflow: "hidden" }}>
+    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
       {pieces.map((p, i) => (
         <div key={i} style={{
           position: "absolute", left: `${p.left}%`, top: -20,

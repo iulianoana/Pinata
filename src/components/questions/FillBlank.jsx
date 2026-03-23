@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import { C } from "../../styles/theme";
 
 export default function FillBlank({ q, value, onChange, onSubmit }) {
   const blanks = value?.blanks || [];
@@ -27,7 +26,7 @@ export default function FillBlank({ q, value, onChange, onSubmit }) {
 
   return (
     <div>
-      <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 2.4, marginBottom: 8 }}>
+      <div className="text-lg font-semibold leading-[2.4] mb-2">
         {parts.map((p, pi) => {
           if (/^___+$/.test(p)) {
             const ci = idx++;
@@ -36,22 +35,14 @@ export default function FillBlank({ q, value, onChange, onSubmit }) {
                 type="text" value={blanks[ci] || ""} onChange={(e) => update(ci, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(ci, e)}
                 placeholder="" autoComplete="off"
-                style={{
-                  display: "inline-block", border: `2.5px solid ${C.border}`, borderRadius: 10,
-                  background: C.inputBg, padding: "6px 12px", margin: "0 4px",
-                  textAlign: "center", color: C.accent, fontWeight: 700, outline: "none",
-                  minWidth: 100, minHeight: 44, fontSize: "inherit", lineHeight: "inherit",
-                  fontFamily: "'Nunito', sans-serif", transition: "all 0.2s",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = C.accent; e.target.style.boxShadow = `0 0 0 3px ${C.accent}20`; }}
-                onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                className="inline-block border-[2.5px] border-border rounded-[10px] bg-input-bg px-3 py-1.5 mx-1 text-center text-accent font-bold outline-none min-w-[100px] min-h-[44px] text-[inherit] leading-[inherit] font-nunito transition-all focus:border-accent focus:shadow-[0_0_0_3px_rgba(0,180,160,0.125)]"
               />
             );
           }
           return <span key={pi}>{p}</span>;
         })}
       </div>
-      {q.hint && <p style={{ color: C.muted, fontSize: 12, fontWeight: 600, marginTop: 12, lineHeight: 1.5 }}>💡 {q.hint}</p>}
+      {q.hint && <p className="text-muted text-xs font-semibold mt-3 leading-normal">💡 {q.hint}</p>}
     </div>
   );
 }
