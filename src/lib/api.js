@@ -311,6 +311,50 @@ export async function deleteQuiz(quizId) {
   return res.json();
 }
 
+// ── Lesson Links ──
+
+export async function fetchLessonLinks(lessonId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/lessons/${lessonId}/links`, { headers });
+  if (!res.ok) throw new Error("Failed to fetch links");
+  return res.json();
+}
+
+export async function fetchLinkPreview(url) {
+  const headers = await authHeaders();
+  const res = await fetch("/api/links/preview", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error("Failed to fetch preview");
+  return res.json();
+}
+
+export async function createLessonLink(lessonId, link) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/lessons/${lessonId}/links`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(link),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to create link");
+  }
+  return res.json();
+}
+
+export async function deleteLessonLink(lessonId, linkId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/lessons/${lessonId}/links/${linkId}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to delete link");
+  return res.json();
+}
+
 // ── Generate from PDF ──
 
 export async function processLessonPdf(payload) {

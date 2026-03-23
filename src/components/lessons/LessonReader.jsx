@@ -8,6 +8,7 @@ import useLessonPdf from "../../useLessonPdf";
 import QuizMiniCard from "../quizzes/QuizMiniCard";
 import AddQuizModal from "../quizzes/AddQuizModal";
 import AddQuizSheet from "../AddQuizSheet";
+import LessonLinks from "./LessonLinks";
 import { fetchQuizzes, updateLesson } from "../../lib/api";
 import { relativeTime } from "../../utils/helpers";
 
@@ -677,6 +678,10 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
                 </div>
                 {renderQuizList(true)}
               </div>
+              {/* Links card — mobile */}
+              <div style={{ marginTop: 16 }}>
+                <LessonLinks lessonId={lesson.id} />
+              </div>
             </div>
 
             {/* Markdown body */}
@@ -709,6 +714,9 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
                 </div>
                 {renderQuizList(false)}
               </div>
+
+              {/* Links card — desktop sidebar */}
+              <LessonLinks lessonId={lesson.id} />
 
               {/* Lesson Progress card */}
               {renderProgressCard()}
@@ -844,6 +852,8 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
                     </div>
                     {renderQuizList(false)}
                   </div>
+                  {/* Links card — PDF panel quizzes tab */}
+                  <LessonLinks lessonId={lesson.id} />
                   {renderProgressCard()}
                 </div>
               </div>
