@@ -19,6 +19,10 @@ import StorageScreen from "./screens/StorageScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import VocabularyScreen from "./screens/VocabularyScreen";
 import PromptsScreen from "./screens/PromptsScreen";
+import ConjugarScreen from "./screens/ConjugarScreen";
+import PackDetailScreen from "./screens/PackDetailScreen";
+import ConjugarResultsScreen from "./screens/ConjugarResultsScreen";
+import ConjugarDrillScreen from "./screens/ConjugarDrillScreen";
 import DesktopSidebar from "./components/DesktopSidebar";
 
 export default function App() {
@@ -88,6 +92,10 @@ export default function App() {
         <Route path="/storage" element={session ? <StorageScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/settings" element={session ? <SettingsScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/prompts" element={session ? <PromptsScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/conjugar" element={session ? <ConjugarScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/conjugar/drill" element={session ? <ConjugarDrillScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/conjugar/results" element={session ? <ConjugarResultsScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/conjugar/:verbId/:tense" element={session ? <PackDetailScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

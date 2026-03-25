@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { id: "quizzes", label: "Quizzes", icon: "monitor" },
   { id: "lessons", label: "Lessons", icon: "bookOpen" },
   { id: "vocabulary", label: "Vocabulary", icon: "languages" },
+  { id: "conjugar", label: "Conjugar", icon: "conjugar" },
   { id: "history", label: "History", icon: "clock" },
 ];
 
@@ -61,6 +62,11 @@ const ICONS = {
   languages: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" />
+    </svg>
+  ),
+  conjugar: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z" /><path d="M14 17h7M14 14h7M14 20h7" />
     </svg>
   ),
   fileEdit: (
@@ -166,6 +172,7 @@ export default function DesktopSidebar({ session }) {
   const getActiveLearnId = () => {
     if (location.pathname === "/lessons" || location.pathname.startsWith("/lesson/")) return "lessons";
     if (location.pathname === "/vocabulary") return "vocabulary";
+    if (location.pathname.startsWith("/conjugar")) return "conjugar";
     if (location.pathname === "/history" || location.pathname === "/history/view") return "history";
     if (location.pathname === "/storage") return "storage";
     if (location.pathname === "/settings") return "settings";
@@ -177,6 +184,7 @@ export default function DesktopSidebar({ session }) {
   const handleLearnClick = (id) => {
     if (id === "lessons") navigate("/lessons");
     else if (id === "vocabulary") navigate("/vocabulary");
+    else if (id === "conjugar") navigate("/conjugar");
     else if (id === "history") navigate("/history");
     else if (id === "storage") navigate("/storage");
     else if (id === "settings") navigate("/settings");
