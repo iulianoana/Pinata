@@ -49,7 +49,7 @@ const tiers = [...new Set(MODEL_OPTIONS.map((m) => m.tier))];
 
 const PRICING_TIERS = [
   {
-    label: "FLAGSHIP (OPUS EQUIVALENT)",
+    label: "FLAGSHIP",
     models: [
       {
         name: "Claude Opus 4.6",
