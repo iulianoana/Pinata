@@ -61,15 +61,18 @@ function pcm16ToWav(pcmBuffer, sampleRate) {
  * RMS (Root Mean Square) measures audio volume: 0.0 = silence, ~0.02–0.15 = normal speech.
  */
 export const MIC_GATE = {
-  /** When AI is NOT speaking: minimum RMS to send audio.
+  /** When AI is NOT speaking: minimum RMS to consider as speech.
    *  0 = send everything (most responsive). */
-  idleThreshold: 0.005,
+  idleThreshold: 0.002,
 
   /** When AI IS speaking: minimum RMS to allow an interrupt.
    *  Higher = harder to interrupt = less sensitive to background noise.
    *  Recommended: 0.03 (quiet room) → 0.08 (noisy car). */
   interruptThreshold: 0.06,
 };
+
+/** Milliseconds of silence before we consider the user done speaking. */
+const SILENCE_TIMEOUT = 1500;
 
 export function useInstantMode() {
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -90,6 +93,8 @@ export function useInstantMode() {
   const setupDoneRef = useRef(false);
   const userAudioBufferRef = useRef([]);
   const aiRespondingRef = useRef(false);
+  const isSpeakingRef = useRef(false);
+  const silenceTimerRef = useRef(null);
 
   const clearPlayback = () => {
     for (const s of activeSourcesRef.current) {
@@ -105,6 +110,10 @@ export function useInstantMode() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
     }
     if (wsRef.current) {
       const ws = wsRef.current;
@@ -138,6 +147,7 @@ export function useInstantMode() {
     setupDoneRef.current = false;
     userAudioBufferRef.current = [];
     aiRespondingRef.current = false;
+    isSpeakingRef.current = false;
     setIsConnecting(false);
     setIsSessionActive(false);
     setIsAISpeaking(false);
@@ -173,11 +183,19 @@ export function useInstantMode() {
     };
   };
 
-  const transcribeUserAudio = async (entryId) => {
+  // Called when local VAD detects the user stopped speaking.
+  // Transcribes audio via Deepgram, then sends TEXT to Gemini.
+  const handleEndOfSpeech = async () => {
     const chunks = userAudioBufferRef.current;
     userAudioBufferRef.current = [];
 
     if (chunks.length === 0) return;
+
+    const entryId = Date.now() + Math.random();
+    setTranscript((prev) => [
+      ...prev,
+      { role: "user", text: "...", id: entryId },
+    ]);
 
     const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
     const combined = new Int16Array(totalLength);
@@ -197,15 +215,31 @@ export function useInstantMode() {
       });
       const data = await res.json();
       const text = data.text?.trim();
-      setTranscript((prev) =>
-        text
-          ? prev.map((e) =>
-              e.id === entryId ? { ...e, text, done: true } : e
-            )
-          : prev.filter((e) => e.id !== entryId)
-      );
+
+      if (text) {
+        setTranscript((prev) =>
+          prev.map((e) =>
+            e.id === entryId ? { ...e, text, done: true } : e
+          )
+        );
+
+        // Send transcribed text to Gemini instead of raw audio
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              clientContent: {
+                turns: [{ parts: [{ text }] }],
+                turnComplete: true,
+              },
+            })
+          );
+        }
+      } else {
+        setTranscript((prev) => prev.filter((e) => e.id !== entryId));
+      }
     } catch (err) {
-      console.error("[Deepgram] Transcription failed:", err);
+      console.error("[STT] Transcription failed:", err);
       setTranscript((prev) => prev.filter((e) => e.id !== entryId));
     }
   };
@@ -223,17 +257,7 @@ export function useInstantMode() {
         msg.serverContent;
 
       if (modelTurn?.parts) {
-        // Only transcribe once per AI turn (modelTurn fires on every audio chunk)
-        if (!aiRespondingRef.current && userAudioBufferRef.current.length > 0) {
-          const entryId = Date.now() + Math.random();
-          setTranscript((prev) => [
-            ...prev,
-            { role: "user", text: "...", id: entryId },
-          ]);
-          transcribeUserAudio(entryId);
-        }
         aiRespondingRef.current = true;
-
         setIsAISpeaking(true);
         for (const part of modelTurn.parts) {
           if (part.inlineData?.data) {
@@ -292,7 +316,7 @@ export function useInstantMode() {
     nodesRef.current.push(silentGain);
 
     const sendPCM = (buffer) => {
-      // --- Volume gate: skip quiet chunks to prevent background-noise interruptions ---
+      // --- Local VAD: detect speech, buffer audio, detect silence ---
       const int16 = new Int16Array(buffer);
       let sumSq = 0;
       for (let i = 0; i < int16.length; i++) {
@@ -305,26 +329,34 @@ export function useInstantMode() {
         ? MIC_GATE.interruptThreshold
         : MIC_GATE.idleThreshold;
 
-      if (rms < threshold) return; // below gate — don't send to Gemini
-      // -----------------------------------------------------------------------
+      if (rms >= threshold) {
+        // User is speaking
+        if (aiRespondingRef.current) {
+          // Interrupt AI playback
+          clearPlayback();
+          setIsAISpeaking(false);
+          aiRespondingRef.current = false;
+        }
 
-      // Buffer for transcription while user is speaking (not during AI response)
-      if (!aiRespondingRef.current) {
         userAudioBufferRef.current.push(int16.slice());
-      }
+        isSpeakingRef.current = true;
 
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({
-            realtimeInput: {
-              audio: {
-                data: arrayBufferToBase64(buffer),
-                mimeType: "audio/pcm;rate=16000",
-              },
-            },
-          })
-        );
+        // Reset silence timer
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      } else if (isSpeakingRef.current) {
+        // Was speaking, now quiet — start silence countdown
+        if (!silenceTimerRef.current) {
+          silenceTimerRef.current = setTimeout(() => {
+            isSpeakingRef.current = false;
+            silenceTimerRef.current = null;
+            handleEndOfSpeech();
+          }, SILENCE_TIMEOUT);
+        }
       }
+      // Audio is NOT sent to Gemini — we send Deepgram text instead
     };
 
     try {
@@ -381,6 +413,7 @@ export function useInstantMode() {
     setIsAISpeaking(false);
     userAudioBufferRef.current = [];
     aiRespondingRef.current = false;
+    isSpeakingRef.current = false;
     try {
       const configRes = await fetch("/api/gemini-session", {
         method: "POST",
@@ -432,12 +465,6 @@ export function useInstantMode() {
               systemInstruction: {
                 parts: [{ text: config.systemInstruction }],
               },
-              realtimeInputConfig: {
-                automaticActivityDetection: {
-                  startOfSpeechSensitivity: "START_SENSITIVITY_LOW",
-                  endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
-                },
-              },
               outputAudioTranscription: {},
             },
           })
@@ -470,6 +497,17 @@ export function useInstantMode() {
           timerRef.current = setInterval(() => {
             setSessionDuration((d) => d + 1);
           }, 1000);
+
+          // Kick off Carolina's greeting via text
+          // (no audio is sent, so we trigger her with a text turn)
+          ws.send(
+            JSON.stringify({
+              clientContent: {
+                turns: [{ parts: [{ text: "hola" }] }],
+                turnComplete: true,
+              },
+            })
+          );
           return;
         }
 
