@@ -11,20 +11,10 @@
 |-------|-------|---------|
 | Conversation | `claude-sonnet-4-6` | Anthropic |
 
-## Basic Chat Practice
-| Layer | Model | Service |
-|-------|-------|---------|
-| Conversation | `gpt-5-nano` | OpenAI |
-
 ## Vocabulary Explanations
 | Layer | Model | Service |
 |-------|-------|---------|
 | Word analysis | `gpt-5-nano` | OpenAI |
-
-## Text-to-Speech (Normal Mode)
-| Layer | Model | Service |
-|-------|-------|---------|
-| TTS | `gpt-4o-mini-tts` (voice: coral) | OpenAI |
 
 ## PDF Lesson Processing
 | Layer | Model | Service |
