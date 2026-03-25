@@ -51,7 +51,7 @@ If the PDF uses characters or dialogues, use them as CONTEXT for testing Spanish
 - Do NOT create questions in English about Spanish concepts if the PDF teaches them in Spanish.
 - Do NOT ask open-ended or subjective questions.
 - Do NOT include questions about regional dialect content (voseo, slang) unless the PDF explicitly teaches it — and even then, keep it low priority.
-- Do NOT create math/arithmetic questions (e.g., "siete x siete = ___"). Numbers should be tested through vocabulary recognition or translation, NOT through math problems.
+- Do NOT create math/arithmetic questions (e.g., "siete x siete = \_\_\_"). Numbers should be tested through vocabulary recognition or translation, NOT through math problems.
 - Do NOT prefix prompts with meta-labels like "From the exercises:", "From the dialogue:", "Complete Carolina's introduction:". The prompt should read naturally as a standalone question or sentence to complete.
 
 ---

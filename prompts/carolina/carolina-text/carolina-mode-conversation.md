@@ -1,4 +1,5 @@
 MODE: FREE CONVERSATION
+
 - Have a natural conversation in Spanish
 - Adjust your level to match the student — use vocabulary and grammar from their lessons
 - If they make errors, correct them inline but keep the conversation flowing

@@ -14,25 +14,25 @@ import { relativeTime } from "../../utils/helpers";
 
 const mdComponents = {
   h1: ({ children }) => (
-    <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "24px 0 12px", lineHeight: 1.3 }}>{children}</h1>
+    <h1 style={{ fontSize: 26, fontWeight: 800, color: C.text, margin: "24px 0 12px", lineHeight: 1.3 }}>{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 style={{ fontSize: 16, fontWeight: 800, color: C.text, margin: "20px 0 8px", lineHeight: 1.4 }}>{children}</h2>
+    <h2 style={{ fontSize: 20, fontWeight: 800, color: C.text, margin: "20px 0 8px", lineHeight: 1.4 }}>{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 style={{ fontSize: 14, fontWeight: 800, color: C.accentHover, margin: "16px 0 6px", lineHeight: 1.4 }}>{children}</h3>
+    <h3 style={{ fontSize: 17, fontWeight: 800, color: C.accentHover, margin: "16px 0 6px", lineHeight: 1.4 }}>{children}</h3>
   ),
   h4: ({ children }) => (
-    <h4 style={{ fontSize: 13, fontWeight: 800, color: C.accentHover, margin: "12px 0 4px" }}>{children}</h4>
+    <h4 style={{ fontSize: 15, fontWeight: 800, color: C.accentHover, margin: "12px 0 4px" }}>{children}</h4>
   ),
   p: ({ children }) => (
-    <p style={{ fontSize: 13, color: "#3A5A52", lineHeight: 1.7, margin: "8px 0", fontWeight: 600 }}>{children}</p>
+    <p style={{ fontSize: 15, color: "#3A5A52", lineHeight: 1.7, margin: "8px 0", fontWeight: 600 }}>{children}</p>
   ),
   ul: ({ children }) => (
-    <ul style={{ paddingLeft: 20, margin: "8px 0", fontSize: 13, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ul>
+    <ul style={{ paddingLeft: 20, margin: "8px 0", fontSize: 15, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol style={{ paddingLeft: 20, margin: "8px 0", fontSize: 13, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ol>
+    <ol style={{ paddingLeft: 20, margin: "8px 0", fontSize: 15, color: "#3A5A52", lineHeight: 1.7, fontWeight: 600 }}>{children}</ol>
   ),
   li: ({ children }) => (
     <li style={{ marginBottom: 4 }}>{children}</li>
@@ -42,7 +42,7 @@ const mdComponents = {
       return (
         <code style={{
           background: C.accentLight, color: C.accentHover, padding: "2px 6px",
-          borderRadius: 6, fontSize: 12, fontFamily: "monospace", fontWeight: 700,
+          borderRadius: 6, fontSize: 14, fontFamily: "monospace", fontWeight: 700,
         }}>{children}</code>
       );
     }
@@ -51,7 +51,7 @@ const mdComponents = {
         background: "#F0FAF8", padding: 16, borderRadius: 12, overflowX: "auto",
         margin: "12px 0", border: `1px solid ${C.border}`,
       }}>
-        <code style={{ fontSize: 12, fontFamily: "monospace", color: C.text, lineHeight: 1.6 }}>{children}</code>
+        <code style={{ fontSize: 14, fontFamily: "monospace", color: C.text, lineHeight: 1.6 }}>{children}</code>
       </pre>
     );
   },
@@ -63,13 +63,13 @@ const mdComponents = {
   ),
   table: ({ children }) => (
     <div style={{ overflowX: "auto", margin: "12px 0" }}>
-      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13, fontWeight: 600 }}>{children}</table>
+      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 15, fontWeight: 600 }}>{children}</table>
     </div>
   ),
   th: ({ children }) => (
     <th style={{
       padding: "8px 12px", borderBottom: `2px solid ${C.accent}`, textAlign: "left",
-      fontWeight: 800, color: C.text, fontSize: 12,
+      fontWeight: 800, color: C.text, fontSize: 14,
     }}>{children}</th>
   ),
   td: ({ children }) => (

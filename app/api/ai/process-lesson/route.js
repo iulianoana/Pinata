@@ -153,7 +153,7 @@ export async function POST(req) {
       key: "summary",
       promise: ai.generateFromPDF({
         model: model_id,
-        system: loadPrompt("lesson/lesson-summary-system"),
+        system: await loadPrompt("lesson/lesson-summary-system", {}, { supabase, userId: user.id }),
         userMessage: "See system instructions.",
         pdfBase64,
         pdfMediaType: "application/pdf",
@@ -167,7 +167,7 @@ export async function POST(req) {
       key: "quiz",
       promise: ai.generateFromPDF({
         model: model_id,
-        system: loadPrompt("lesson/quiz-generator-system", { numberOfQuestions: quizQuestionCount }),
+        system: await loadPrompt("lesson/quiz-generator-system", { numberOfQuestions: quizQuestionCount }, { supabase, userId: user.id }),
         userMessage: "See system instructions.",
         pdfBase64,
         pdfMediaType: "application/pdf",

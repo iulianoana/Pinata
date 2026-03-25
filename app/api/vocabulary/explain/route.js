@@ -35,9 +35,10 @@ export async function POST(req) {
 
     const isBulk = words.length > 1;
 
+    const promptOpts = { supabase, userId: user.id };
     const systemPrompt = isBulk
-      ? loadPrompt("vocab/vocab-explain-bulk")
-      : loadPrompt("vocab/vocab-explain-single");
+      ? await loadPrompt("vocab/vocab-explain-bulk", {}, promptOpts)
+      : await loadPrompt("vocab/vocab-explain-single", {}, promptOpts);
 
     const userContent = isBulk ? words.join(", ") : words[0];
 

@@ -32,7 +32,7 @@ function Toggle({ on, onChange }) {
 }
 
 export default function GenerateFromPDFOptions({
-  fileInfo, genSummary, genQuiz,
+  fileInfo, genSummary, genQuiz, modelName,
   onToggleSummary, onToggleQuiz, onGenerate, onCancel,
 }) {
   const anyAI = genSummary || genQuiz;
@@ -165,7 +165,7 @@ export default function GenerateFromPDFOptions({
         <span style={{
           width: 6, height: 6, borderRadius: 3, background: "#3dba6f", display: "inline-block",
         }} />
-        Claude Sonnet 4 · ~20s per task
+        {modelName || "AI Model"} · ~20s per task
       </div>
 
       {/* Footer buttons */}

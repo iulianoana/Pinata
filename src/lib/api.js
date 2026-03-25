@@ -364,6 +364,43 @@ export async function deleteLessonLink(lessonId, linkId) {
   return res.json();
 }
 
+// ── Prompts ──
+
+export async function getPrompts() {
+  const headers = await authHeaders();
+  const res = await fetch("/api/prompts", { headers });
+  if (!res.ok) throw new Error("Failed to fetch prompts");
+  const data = await res.json();
+  return data.prompts;
+}
+
+export async function updatePrompt(id, content) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/prompts/${id}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to save prompt");
+  }
+  return res.json();
+}
+
+export async function undoPrompt(id) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/prompts/${id}/undo`, {
+    method: "PUT",
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to undo");
+  }
+  return res.json();
+}
+
 // ── Generate from PDF ──
 
 export async function processLessonPdf(payload) {

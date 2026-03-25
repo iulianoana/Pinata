@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../../styles/theme";
+import { supabase } from "../../lib/supabase.js";
 import { createLesson, uploadLessonPdf, processLessonPdf, fetchLesson } from "../../lib/api";
 import GenerateFromPDFUpload from "./GenerateFromPDFUpload";
 import GenerateFromPDFOptions from "./GenerateFromPDFOptions";
@@ -22,7 +23,30 @@ export default function GenerateFromPDFDialog({ open, onClose, unitId, onComplet
   const [steps, setSteps] = useState([]);
   const [results, setResults] = useState(null);
   const [summaryPreview, setSummaryPreview] = useState(null);
+  const [modelName, setModelName] = useState(null);
   const processingRef = useRef(false);
+
+  // Fetch the user's pdf_processing model display name
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch("/api/settings/models", {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (res.ok) {
+          const models = await res.json();
+          if (models.pdf_processing?.display_name) {
+            setModelName(models.pdf_processing.display_name);
+          }
+        }
+      } catch {}
+    })();
+  }, [open]);
 
   const resetState = () => {
     setState("upload");
@@ -320,6 +344,7 @@ export default function GenerateFromPDFDialog({ open, onClose, unitId, onComplet
                 fileInfo={fileInfo}
                 genSummary={genSummary}
                 genQuiz={genQuiz}
+                modelName={modelName}
                 onToggleSummary={() => setGenSummary(v => !v)}
                 onToggleQuiz={() => setGenQuiz(v => !v)}
                 onGenerate={handleGenerate}

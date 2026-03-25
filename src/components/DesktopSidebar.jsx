@@ -63,6 +63,11 @@ const ICONS = {
       <path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" />
     </svg>
   ),
+  fileEdit: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  ),
 };
 
 async function getAuthHeaders() {
@@ -164,6 +169,7 @@ export default function DesktopSidebar({ session }) {
     if (location.pathname === "/history" || location.pathname === "/history/view") return "history";
     if (location.pathname === "/storage") return "storage";
     if (location.pathname === "/settings") return "settings";
+    if (location.pathname === "/prompts") return "prompts";
     if (location.pathname === "/carolina" || location.pathname === "/dialog") return null;
     return "quizzes";
   };
@@ -174,6 +180,7 @@ export default function DesktopSidebar({ session }) {
     else if (id === "history") navigate("/history");
     else if (id === "storage") navigate("/storage");
     else if (id === "settings") navigate("/settings");
+    else if (id === "prompts") navigate("/prompts");
     else navigate("/");
   };
 
@@ -397,6 +404,7 @@ export default function DesktopSidebar({ session }) {
 
       {/* Bottom section */}
       <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px", flexShrink: 0 }}>
+        {renderLearnItem({ id: "prompts", label: "Prompts", icon: "fileEdit" })}
         {renderLearnItem({ id: "settings", label: "Settings", icon: "settings" })}
         {renderLearnItem({ id: "storage", label: "Offline Storage", icon: "settings" })}
 

@@ -18,6 +18,7 @@ import CarolinaScreen from "./screens/CarolinaScreen";
 import StorageScreen from "./screens/StorageScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import VocabularyScreen from "./screens/VocabularyScreen";
+import PromptsScreen from "./screens/PromptsScreen";
 import DesktopSidebar from "./components/DesktopSidebar";
 
 export default function App() {
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="/carolina" element={session ? <CarolinaScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/storage" element={session ? <StorageScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/settings" element={session ? <SettingsScreen session={session} /> : <Navigate to="/login" replace />} />
+        <Route path="/prompts" element={session ? <PromptsScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

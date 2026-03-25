@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "./supabase.js";
 
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -415,9 +416,13 @@ export function useInstantMode() {
     aiRespondingRef.current = false;
     isSpeakingRef.current = false;
     try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
       const configRes = await fetch("/api/gemini-session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authSession?.access_token && { Authorization: `Bearer ${authSession.access_token}` }),
+        },
         body: JSON.stringify({ unitContext }),
       });
       const config = await configRes.json();

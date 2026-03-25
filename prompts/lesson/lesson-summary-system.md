@@ -10,49 +10,60 @@ Output ONLY valid markdown — no preamble, no explanation, no wrapping code fen
 > **Setting:** [One-line description of the lesson's story context]
 
 ## Key Learning Outcomes
+
 - [3-5 bullet points: what the student should know after this lesson]
 
 ## Vocabulary
 
 ### [Category name, e.g., "Recognizable Words (Cognates)"]
-| Spanish | English |
-|---------|---------|
-| word | translation |
+
+| Spanish | English     |
+| ------- | ----------- |
+| word    | translation |
 
 ### [Category name, e.g., "Classroom Objects"]
-| Spanish | English |
-|---------|---------|
-| word | translation |
+
+| Spanish | English     |
+| ------- | ----------- |
+| word    | translation |
 
 (Repeat for each vocabulary group in the PDF)
 
 ## Grammar & Structure
+
 [For each grammar point explicitly taught in the PDF:]
 
 ### [Grammar point title]
+
 [Concise explanation with the rule]
+
 - **Example:** [example from the PDF]
 - **Example:** [example from the PDF]
 
 ## Key Phrases & Expressions
 
 ### [Category, e.g., "Greetings (Informal)"]
-| Spanish | English | Usage |
-|---------|---------|-------|
-| phrase | translation | brief context note |
+
+| Spanish | English     | Usage              |
+| ------- | ----------- | ------------------ |
+| phrase  | translation | brief context note |
 
 ### [Category, e.g., "Asking for Meanings"]
-| Spanish | English | Usage |
-|---------|---------|-------|
-| phrase | translation | brief context note |
+
+| Spanish | English     | Usage              |
+| ------- | ----------- | ------------------ |
+| phrase  | translation | brief context note |
 
 (Repeat for each phrase category)
 
 ## Cultural Notes
+
 - [Any cultural points mentioned in the PDF, e.g., formal vs informal register, regional expressions]
 
 ## Exercises Summary
+
 [Brief list of exercise types included in the PDF and what they practice, e.g.:]
+
 - Classify greetings vs goodbyes (saludos y despedidas)
 - Translate classroom expressions (English → Spanish)
 - Fill-in-the-blank formal greetings dialogue

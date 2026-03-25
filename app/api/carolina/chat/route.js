@@ -13,14 +13,14 @@ function getSupabase(req) {
   );
 }
 
-function buildSystemPrompt(mode, lessonContent) {
+async function buildSystemPrompt(mode, lessonContent, options = {}) {
   const validModes = ["essay", "grammar", "vocab", "conversation"];
   const safeMode = validModes.includes(mode) ? mode : "conversation";
-  const identity = loadPrompt("carolina/carolina-identity");
-  const modePrompt = loadPrompt(`carolina/carolina-text/carolina-mode-${safeMode}`);
+  const identity = await loadPrompt("carolina/carolina-identity", {}, options);
+  const modePrompt = await loadPrompt(`carolina/carolina-text/carolina-mode-${safeMode}`, {}, options);
   const lessonCtx =
     lessonContent.length > 0
-      ? "\n\n" + loadPrompt("carolina/carolina-text/carolina-lesson-context", { lessonContent: lessonContent.join("\n\n---\n\n") })
+      ? "\n\n" + await loadPrompt("carolina/carolina-text/carolina-lesson-context", { lessonContent: lessonContent.join("\n\n---\n\n") }, options)
       : "";
   return `${identity}\n\n${modePrompt}${lessonCtx}`;
 }
@@ -122,7 +122,8 @@ export async function POST(req) {
   }
 
   // Build system prompt and stream response
-  const systemPrompt = buildSystemPrompt(session.mode || mode || "conversation", lessonContent);
+  const promptOpts = { supabase, userId: user.id };
+  const systemPrompt = await buildSystemPrompt(session.mode || mode || "conversation", lessonContent, promptOpts);
   const conversationHistory = messages.map((m) => ({ role: m.role, content: m.content }));
 
   const encoder = new TextEncoder();
