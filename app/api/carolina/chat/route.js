@@ -1,7 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { getProvider } from "../../../../lib/ai/provider.js";
+import { getUserModel } from "../../../../lib/ai/get-user-model.js";
 
 function getSupabase(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -76,6 +75,10 @@ export async function POST(req) {
     return Response.json({ error: "message is required" }, { status: 400 });
   }
 
+  // Get user's model preference
+  const { model_id, provider } = await getUserModel(supabase, user.id, "carolina_chat");
+  const ai = getProvider(provider);
+
   let activeSessionId = sessionId;
 
   // Create a new session if none provided
@@ -87,7 +90,7 @@ export async function POST(req) {
         type: "chat",
         mode: mode || "conversation",
         resources: resources || null,
-        model: "claude-sonnet-4-6",
+        model: model_id,
       })
       .select("id")
       .single();
@@ -154,7 +157,7 @@ export async function POST(req) {
     }
   }
 
-  // Build system prompt and call Anthropic
+  // Build system prompt and stream response
   const systemPrompt = buildSystemPrompt(session.mode || mode || "conversation", lessonContent);
   const conversationHistory = messages.map((m) => ({ role: m.role, content: m.content }));
 
@@ -164,43 +167,33 @@ export async function POST(req) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        // Send sessionId as the first event
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "session", sessionId: activeSessionId })}\n\n`)
         );
 
-        const apiStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-6",
-          max_tokens: 4096,
+        const iterator = ai.streamChat({
+          model: model_id,
           system: systemPrompt,
           messages: conversationHistory,
+          maxTokens: 4096,
         });
 
-        apiStream.on("text", (text) => {
+        for await (const text of iterator) {
           fullResponse += text;
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "delta", text })}\n\n`)
           );
-        });
+        }
 
-        apiStream.on("end", async () => {
-          // Save assistant message
-          await supabase
-            .from("chat_messages")
-            .insert({ session_id: activeSessionId, role: "assistant", content: fullResponse });
+        // Save assistant message
+        await supabase
+          .from("chat_messages")
+          .insert({ session_id: activeSessionId, role: "assistant", content: fullResponse });
 
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)
-          );
-          controller.close();
-        });
-
-        apiStream.on("error", (err) => {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: "error", error: err.message })}\n\n`)
-          );
-          controller.close();
-        });
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)
+        );
+        controller.close();
       } catch (err) {
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "error", error: err.message })}\n\n`)

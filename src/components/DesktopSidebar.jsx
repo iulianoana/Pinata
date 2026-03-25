@@ -163,6 +163,7 @@ export default function DesktopSidebar({ session }) {
     if (location.pathname === "/vocabulary") return "vocabulary";
     if (location.pathname === "/history" || location.pathname === "/history/view") return "history";
     if (location.pathname === "/storage") return "storage";
+    if (location.pathname === "/settings") return "settings";
     if (location.pathname === "/carolina" || location.pathname === "/dialog") return null;
     return "quizzes";
   };
@@ -172,6 +173,7 @@ export default function DesktopSidebar({ session }) {
     else if (id === "vocabulary") navigate("/vocabulary");
     else if (id === "history") navigate("/history");
     else if (id === "storage") navigate("/storage");
+    else if (id === "settings") navigate("/settings");
     else navigate("/");
   };
 
@@ -395,6 +397,7 @@ export default function DesktopSidebar({ session }) {
 
       {/* Bottom section */}
       <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px", flexShrink: 0 }}>
+        {renderLearnItem({ id: "settings", label: "Settings", icon: "settings" })}
         {renderLearnItem({ id: "storage", label: "Offline Storage", icon: "settings" })}
 
         <div style={{

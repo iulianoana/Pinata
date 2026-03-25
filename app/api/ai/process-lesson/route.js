@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { getAIProvider } from "../../../../lib/ai/provider.js";
+import { getProvider } from "../../../../lib/ai/provider.js";
+import { getUserModel } from "../../../../lib/ai/get-user-model.js";
 import { LESSON_SUMMARY_PROMPT } from "../../../../lib/ai/prompts/lesson-summary.js";
 import { getQuizPrompt } from "../../../../lib/ai/prompts/quiz-generator.js";
 
@@ -143,7 +144,8 @@ export async function POST(req) {
   const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
   const pdfBase64 = pdfBuffer.toString("base64");
 
-  const ai = getAIProvider();
+  const { model_id, provider } = await getUserModel(supabase, user.id, "pdf_processing");
+  const ai = getProvider(provider);
   const tasks = [];
 
   // Build generation tasks
@@ -151,7 +153,8 @@ export async function POST(req) {
     tasks.push({
       key: "summary",
       promise: ai.generateFromPDF({
-        systemPrompt: LESSON_SUMMARY_PROMPT,
+        model: model_id,
+        system: LESSON_SUMMARY_PROMPT,
         userMessage: "Read this Spanish lesson PDF and generate a structured markdown summary following the format specified in your instructions.",
         pdfBase64,
         pdfMediaType: "application/pdf",
@@ -164,7 +167,8 @@ export async function POST(req) {
     tasks.push({
       key: "quiz",
       promise: ai.generateFromPDF({
-        systemPrompt: getQuizPrompt(quizQuestionCount),
+        model: model_id,
+        system: getQuizPrompt(quizQuestionCount),
         userMessage: "Read this Spanish lesson PDF and generate a quiz JSON file following the format and rules specified in your instructions.",
         pdfBase64,
         pdfMediaType: "application/pdf",
