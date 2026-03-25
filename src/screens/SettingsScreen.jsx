@@ -47,6 +47,73 @@ const FEATURES = [
 
 const tiers = [...new Set(MODEL_OPTIONS.map((m) => m.tier))];
 
+const PRICING_TIERS = [
+  {
+    label: "FLAGSHIP (OPUS EQUIVALENT)",
+    models: [
+      {
+        name: "Claude Opus 4.6",
+        provider: "Anthropic",
+        providerColor: "#7C3AED",
+        providerBg: "#EDE9FE",
+        prices: [
+          { label: "Input", value: "$5.00" },
+          { label: "Output", value: "$25.00" },
+        ],
+        extraPrices: [
+          { label: "Cache write", value: "$6.25" },
+          { label: "Cache hit", value: "$0.50" },
+        ],
+        note: "1M context · standard rate",
+      },
+      {
+        name: "GPT-5.4",
+        provider: "OpenAI",
+        providerColor: "#5C6B3A",
+        providerBg: "#ECEED8",
+        prices: [
+          { label: "Input", value: "$2.50" },
+          { label: "Output", value: "$15.00" },
+        ],
+        extraPrices: [
+          { label: "Cached input", value: "$0.25" },
+          { label: ">272K input", value: "$5.00" },
+        ],
+        note: "1.05M context · doubles past 272K",
+      },
+    ],
+  },
+  {
+    label: "MID-TIER (BALANCED)",
+    models: [
+      {
+        name: "Claude Sonnet 4.6",
+        provider: "Anthropic",
+        providerColor: "#7C3AED",
+        providerBg: "#EDE9FE",
+        prices: [
+          { label: "Input", value: "$3.00" },
+          { label: "Output", value: "$15.00" },
+        ],
+        extraPrices: [],
+        note: "1M context · standard rate",
+      },
+      {
+        name: "GPT-5.4 Mini",
+        provider: "OpenAI",
+        providerColor: "#5C6B3A",
+        providerBg: "#ECEED8",
+        prices: [
+          { label: "Input", value: "$0.75" },
+          { label: "Output", value: "$4.50" },
+        ],
+        extraPrices: [],
+        note: "Smaller model, lower capability",
+      },
+    ],
+  },
+];
+
 async function getAuthHeaders() {
   const { data: { session } } = await supabase.auth.getSession();
   return {
@@ -211,6 +278,100 @@ export default function SettingsScreen() {
               </div>
             );
           })}
+        </div>
+
+        {/* Pricing comparison table */}
+        <div style={{ marginTop: 36 }}>
+          {PRICING_TIERS.map((tier) => (
+            <div key={tier.label} style={{ marginBottom: 28 }}>
+              <h3 style={{
+                fontSize: 13, fontWeight: 800, color: C.text,
+                textTransform: "uppercase", letterSpacing: "0.05em",
+                fontFamily: "'Nunito', sans-serif", margin: "0 0 12px",
+              }}>{tier.label}</h3>
+
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}>
+                {tier.models.map((model) => (
+                  <div key={model.name} style={{
+                    background: "#fff",
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    padding: "16px 18px",
+                  }}>
+                    {/* Provider badge */}
+                    <span style={{
+                      display: "inline-block",
+                      fontSize: 11, fontWeight: 700,
+                      color: model.providerColor,
+                      background: model.providerBg,
+                      padding: "2px 8px", borderRadius: 4,
+                      fontFamily: "'Nunito', sans-serif",
+                      marginBottom: 8,
+                    }}>{model.provider}</span>
+
+                    {/* Model name */}
+                    <div style={{
+                      fontSize: 16, fontWeight: 800, color: C.text,
+                      fontFamily: "'Nunito', sans-serif", marginBottom: 12,
+                    }}>{model.name}</div>
+
+                    {/* Base prices */}
+                    {model.prices.map((p) => (
+                      <div key={p.label} style={{
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "baseline", marginBottom: 4,
+                      }}>
+                        <span style={{
+                          fontSize: 13, color: C.muted,
+                          fontFamily: "'Nunito', sans-serif", fontWeight: 600,
+                        }}>{p.label}</span>
+                        <span style={{
+                          fontSize: 14, fontWeight: 800, color: C.text,
+                          fontFamily: "'Nunito', sans-serif",
+                        }}>{p.value}</span>
+                      </div>
+                    ))}
+
+                    {/* Extra prices (cache etc.) */}
+                    {model.extraPrices.length > 0 && (
+                      <>
+                        <div style={{
+                          borderTop: `1px solid ${C.border}`,
+                          margin: "8px 0",
+                        }} />
+                        {model.extraPrices.map((p) => (
+                          <div key={p.label} style={{
+                            display: "flex", justifyContent: "space-between",
+                            alignItems: "baseline", marginBottom: 4,
+                          }}>
+                            <span style={{
+                              fontSize: 13, color: C.muted,
+                              fontFamily: "'Nunito', sans-serif", fontWeight: 600,
+                            }}>{p.label}</span>
+                            <span style={{
+                              fontSize: 14, fontWeight: 800, color: C.text,
+                              fontFamily: "'Nunito', sans-serif",
+                            }}>{p.value}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Note */}
+                    <div style={{
+                      fontSize: 11, color: C.muted,
+                      fontFamily: "'Nunito', sans-serif", fontWeight: 600,
+                      marginTop: 10,
+                    }}>{model.note}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
