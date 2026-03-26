@@ -14,6 +14,47 @@ import OddOneOutExercise from "./exercises/OddOneOutExercise";
 import ConjugationChainExercise from "./exercises/ConjugationChainExercise";
 import MiniStoryExercise from "./exercises/MiniStoryExercise";
 
+const STORAGE_KEY = "pinata_drill_session";
+
+function saveSessionToStorage(packIds, exercises, currentIndex, answers, feedbacks) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      packIds: [...packIds].sort(),
+      exercises,
+      currentIndex,
+      answers,
+      feedbacks,
+      savedAt: new Date().toISOString(),
+    }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function loadSessionFromStorage(packIds) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    // Match pack IDs (order-independent)
+    if (JSON.stringify([...packIds].sort()) !== JSON.stringify(saved.packIds)) return null;
+    if (!saved.exercises?.length) return null;
+    return saved;
+  } catch { return null; }
+}
+
+export function clearDrillSession() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+export function getSavedDrillSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (!saved.exercises?.length || !saved.packIds?.length) return null;
+    return saved;
+  } catch { return null; }
+}
+
 export default function DrillSession({ packIds }) {
   const navigate = useNavigate();
   const chainRef = useRef(null);
@@ -27,9 +68,21 @@ export default function DrillSession({ packIds }) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load packs and build session
+  // Load packs and build session — or restore from localStorage
   useEffect(() => {
     let cancelled = false;
+
+    // Try restoring a saved session first
+    const saved = loadSessionFromStorage(packIds);
+    if (saved) {
+      setExercises(saved.exercises);
+      setCurrentIndex(saved.currentIndex || 0);
+      setAnswers(saved.answers || {});
+      setFeedbacks(saved.feedbacks || {});
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       try {
         const { packs } = await fetchDrillPacks(packIds);
@@ -38,7 +91,10 @@ export default function DrillSession({ packIds }) {
           setError("No se encontraron paquetes");
           return;
         }
-        setExercises(buildSession(packs));
+        const built = buildSession(packs);
+        setExercises(built);
+        // Save initial state
+        saveSessionToStorage(packIds, built, 0, {}, {});
       } catch (e) {
         if (!cancelled) setError(e.message);
       } finally {
@@ -48,6 +104,13 @@ export default function DrillSession({ packIds }) {
     load();
     return () => { cancelled = true; };
   }, [packIds]);
+
+  // Persist session state to localStorage on every meaningful change
+  useEffect(() => {
+    if (exercises.length > 0) {
+      saveSessionToStorage(packIds, exercises, currentIndex, answers, feedbacks);
+    }
+  }, [packIds, exercises, currentIndex, answers, feedbacks]);
 
   const current = exercises[currentIndex];
   const currentFeedback = current ? feedbacks[current.id] : null;
@@ -89,6 +152,7 @@ export default function DrillSession({ packIds }) {
       } catch {
         // Continue to results even if save fails
       }
+      clearDrillSession();
       navigate("/conjugar/results", {
         state: { score, total, percentage, packIds, details },
       });
@@ -321,7 +385,7 @@ export default function DrillSession({ packIds }) {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">¿Salir del drill?</h3>
             <p className="text-sm text-gray-500 mb-6">
-              Tu progreso no se guardará.
+              Tu progreso se guardará y podrás continuar después.
             </p>
             <div className="flex gap-3">
               <button

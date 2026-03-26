@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../styles/theme";
 import { SPANISH_TENSES } from "../lib/conjugar/constants";
 import { useVerbs } from "../lib/conjugar/api";
 import { VerbTypeBadge, ScoreBadge, timeAgo } from "../components/conjugar/shared";
+import { getSavedDrillSession, clearDrillSession } from "../components/conjugar/DrillSession";
 import MobileNavBar from "../components/MobileNavBar";
 import AddVerbModal from "../components/conjugar/AddVerbModal";
 
@@ -15,6 +16,12 @@ export default function ConjugarScreen({ session }) {
   const [filter, setFilter] = useState("Todos");
   const [selectedPacks, setSelectedPacks] = useState([]); // [{verbId, tense, packId}]
   const [showAddModal, setShowAddModal] = useState(false);
+  const [savedSession, setSavedSession] = useState(null);
+
+  // Check for an in-progress drill session
+  useEffect(() => {
+    setSavedSession(getSavedDrillSession());
+  }, []);
 
   const filtered = useMemo(() => {
     if (filter === "Todos") return verbs;
@@ -148,6 +155,46 @@ export default function ConjugarScreen({ session }) {
             </button>
           ))}
         </div>
+
+        {/* Resume in-progress drill */}
+        {savedSession && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            padding: "12px 16px", borderRadius: 14, marginBottom: 16,
+            background: "#ECFDF5", border: `1.5px solid #A7F3D0`,
+          }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#059669", margin: 0 }}>
+                Drill en progreso
+              </p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#047857", margin: "2px 0 0" }}>
+                Ejercicio {(savedSession.currentIndex || 0) + 1} de {savedSession.exercises?.length || 15}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setSavedSession(null);
+                clearDrillSession();
+              }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: 4, color: "#6B7280", fontSize: 12, fontWeight: 700,
+              }}
+            >
+              Descartar
+            </button>
+            <button
+              onClick={() => navigate(`/conjugar/drill?packs=${savedSession.packIds.join(",")}`)}
+              style={{
+                padding: "8px 18px", borderRadius: 10, border: "none",
+                background: "#059669", color: "white", fontSize: 13, fontWeight: 800,
+                cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              Continuar
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {verbs.length === 0 ? (
