@@ -65,7 +65,6 @@ export default function DrillSession({ packIds }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [feedbacks, setFeedbacks] = useState({});
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Load packs and build session — or restore from localStorage
@@ -297,7 +296,7 @@ export default function DrillSession({ packIds }) {
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <button
-          onClick={() => setShowExitConfirm(true)}
+          onClick={() => navigate("/conjugar")}
           className="text-sm font-semibold text-gray-500 hover:text-gray-700 flex items-center gap-1"
         >
           <span>‹</span> Salir del drill
@@ -378,32 +377,6 @@ export default function DrillSession({ packIds }) {
         )}
       </div>
 
-      {/* ── Exit confirmation ── */}
-      {showExitConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Salir del drill?</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              Tu progreso se guardará y podrás continuar después.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowExitConfirm(false)}
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-600"
-              >
-                Continuar
-              </button>
-              <button
-                onClick={() => navigate("/conjugar")}
-                className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-white"
-                style={{ background: "#DC2626" }}
-              >
-                Salir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
