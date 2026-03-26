@@ -26,15 +26,15 @@ export const injectStyles = () => {
     .skeleton { background: linear-gradient(90deg, #D4F0EB 25%, #E8F7F4 50%, #D4F0EB 75%); background-size: 600px 100%; animation: shimmer 1.8s infinite ease-in-out; border-radius: 8px; }
     .skeleton-glow { animation: skeletonGlow 2s infinite ease-in-out; }
     @keyframes skeletonGlow { 0%, 100% { box-shadow: 0 0 8px rgba(0, 180, 160, 0.08), 0 1px 4px rgba(0,60,50,0.06); } 50% { box-shadow: 0 0 20px rgba(0, 180, 160, 0.18), 0 4px 12px rgba(0,60,50,0.08); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
     @keyframes scoreReveal { from { stroke-dashoffset: 339.292; } }
-    @keyframes countUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    @keyframes countUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: none; } }
     @keyframes shimmer { from { background-position: -600px 0; } to { background-position: 600px 0; } }
     @keyframes confettiDrop { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: 0; } }
-    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
     @keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
     @keyframes progressGrow { from { width: 0%; } }
     @keyframes progressIndeterminate { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
