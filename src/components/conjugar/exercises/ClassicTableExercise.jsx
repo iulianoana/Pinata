@@ -1,12 +1,28 @@
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PERSONS } from "@/lib/conjugar/constants";
 import { getExerciseMeta } from "../shared";
 
 export default function ClassicTableExercise({ exercise, onAnswer, feedback, answer = {} }) {
   const meta = getExerciseMeta("classic_table");
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (!feedback && inputRefs.current[0]) inputRefs.current[0].focus();
+  }, [exercise, feedback]);
 
   const handleChange = (person, value) => {
     onAnswer({ ...answer, [person]: value });
+  };
+
+  const handleKeyDown = (idx, e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (idx < PERSONS.length - 1 && inputRefs.current[idx + 1]) {
+        e.nativeEvent.stopPropagation();
+        inputRefs.current[idx + 1].focus();
+      }
+    }
   };
 
   return (
@@ -20,7 +36,7 @@ export default function ClassicTableExercise({ exercise, onAnswer, feedback, ans
       </p>
 
       <div className="w-full rounded-2xl border border-gray-200 divide-y divide-gray-100">
-        {PERSONS.map((person) => {
+        {PERSONS.map((person, idx) => {
           const fb = feedback?.details?.[person];
           return (
             <div key={person} className="flex items-center gap-3 px-4 py-3">
@@ -29,9 +45,11 @@ export default function ClassicTableExercise({ exercise, onAnswer, feedback, ans
               </span>
               <div className="flex-1 flex flex-col gap-1">
                 <input
+                  ref={(el) => (inputRefs.current[idx] = el)}
                   type="text"
                   value={answer[person] || ""}
                   onChange={(e) => handleChange(person, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(idx, e)}
                   disabled={!!feedback}
                   placeholder="..."
                   className={cn(

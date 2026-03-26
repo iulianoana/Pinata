@@ -1,9 +1,15 @@
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getExerciseMeta } from "../shared";
 
 export default function GapFillExercise({ exercise, onAnswer, feedback, answer = "" }) {
   const meta = getExerciseMeta("gap_fill");
   const parts = exercise.sentence.split("___");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!feedback && inputRef.current) inputRef.current.focus();
+  }, [exercise, feedback]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
@@ -15,6 +21,7 @@ export default function GapFillExercise({ exercise, onAnswer, feedback, answer =
         {parts[0]}
         <span className="inline-flex flex-col items-center mx-1">
           <input
+            ref={inputRef}
             type="text"
             value={answer}
             onChange={(e) => onAnswer(e.target.value)}
@@ -25,7 +32,7 @@ export default function GapFillExercise({ exercise, onAnswer, feedback, answer =
               feedback?.correct && "border-green-500 text-green-700",
               feedback && !feedback.correct && "border-red-500 text-red-700"
             )}
-            placeholder="___"
+            placeholder=""
           />
           {feedback && !feedback.correct && (
             <span className="text-sm font-semibold text-green-600 mt-1">

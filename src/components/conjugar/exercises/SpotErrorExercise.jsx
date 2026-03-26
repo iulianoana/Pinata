@@ -14,7 +14,7 @@ export default function SpotErrorExercise({ exercise, onAnswer, feedback, answer
         Toca la palabra incorrecta
       </p>
 
-      <div className="flex flex-wrap justify-center gap-3">
+      <p className="text-xl font-semibold text-gray-800 leading-[2.4] text-center">
         {exercise.words.map((word, i) => {
           const isError = feedback && i === exercise.errorIndex;
           const isSelected = selected === i;
@@ -23,25 +23,27 @@ export default function SpotErrorExercise({ exercise, onAnswer, feedback, answer
           const revealError = isError && !feedback.correct;
 
           return (
-            <button
-              key={i}
-              onClick={() => !feedback && onAnswer(i)}
-              disabled={!!feedback}
-              className={cn(
-                "px-5 py-3 rounded-xl border-2 text-lg font-semibold transition-all",
-                !feedback && !isSelected && "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
-                !feedback && isSelected && "border-blue-400 bg-blue-50 text-blue-700",
-                gotItRight && "border-green-400 bg-green-50 text-green-600 line-through",
-                revealError && "border-red-400 bg-red-50 text-red-500 line-through",
-                wasWrong && "border-red-300 bg-red-50 text-red-400",
-                feedback && !isError && !wasWrong && "border-gray-100 bg-gray-50 text-gray-400"
-              )}
-            >
-              {word}
-            </button>
+            <span key={i}>
+              <button
+                onClick={() => !feedback && onAnswer(i)}
+                disabled={!!feedback}
+                className={cn(
+                  "inline rounded-lg px-1.5 py-0.5 text-xl font-semibold transition-all",
+                  !feedback && !isSelected && "text-gray-800 hover:bg-gray-100 active:bg-blue-50",
+                  !feedback && isSelected && "bg-blue-100 text-blue-700 ring-2 ring-blue-400",
+                  gotItRight && "bg-green-100 text-green-600 line-through",
+                  revealError && "bg-red-100 text-red-500 line-through",
+                  wasWrong && "bg-red-100 text-red-400",
+                  feedback && !isError && !wasWrong && "text-gray-400"
+                )}
+              >
+                {word}
+              </button>
+              {i < exercise.words.length - 1 && " "}
+            </span>
           );
         })}
-      </div>
+      </p>
 
       {feedback && (
         <div className="mt-6 text-center">

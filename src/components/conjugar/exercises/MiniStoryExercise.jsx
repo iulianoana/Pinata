@@ -1,14 +1,32 @@
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getExerciseMeta } from "../shared";
 
 export default function MiniStoryExercise({ exercise, onAnswer, feedback, answer = [] }) {
   const meta = getExerciseMeta("mini_story");
+  const inputRefs = useRef([]);
   let blankIdx = 0;
+
+  const blankCount = exercise.segments.filter((s) => s.isBlank).length;
+
+  useEffect(() => {
+    if (!feedback && inputRefs.current[0]) inputRefs.current[0].focus();
+  }, [exercise, feedback]);
 
   const handleChange = (idx, value) => {
     const next = [...answer];
     next[idx] = value;
     onAnswer(next);
+  };
+
+  const handleKeyDown = (idx, e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (idx < blankCount - 1 && inputRefs.current[idx + 1]) {
+        e.nativeEvent.stopPropagation();
+        inputRefs.current[idx + 1].focus();
+      }
+    }
   };
 
   return (
@@ -28,9 +46,11 @@ export default function MiniStoryExercise({ exercise, onAnswer, feedback, answer
             return (
               <span key={i} className="inline-flex flex-col items-center mx-1">
                 <input
+                  ref={(el) => (inputRefs.current[idx] = el)}
                   type="text"
                   value={answer[idx] || ""}
                   onChange={(e) => handleChange(idx, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(idx, e)}
                   disabled={!!feedback}
                   className={cn(
                     "w-28 text-center text-xl font-semibold border-b-2 outline-none bg-transparent pb-0.5",
@@ -38,7 +58,7 @@ export default function MiniStoryExercise({ exercise, onAnswer, feedback, answer
                     fb?.correct && "border-green-500 text-green-700",
                     fb && !fb.correct && "border-red-500 text-red-700"
                   )}
-                  placeholder="___"
+                  placeholder=""
                 />
                 {fb && !fb.correct && (
                   <span className="text-xs font-semibold text-green-600 mt-0.5">
