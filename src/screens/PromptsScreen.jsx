@@ -330,14 +330,80 @@ function extractVariables(content) {
   return vars;
 }
 
-/** Simple markdown → HTML (headers, bold, italic, lists, paragraphs). */
+/** Lightweight syntax highlighter for code blocks (JSON-aware, handles common patterns). */
+function highlightCode(raw) {
+  // HTML-escape first
+  let code = raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Tokenize and highlight — order matters to avoid double-matching
+  // We process via a single regex replace to avoid overlapping spans
+  code = code.replace(
+    // Match in priority order: comments, strings, numbers, booleans/null, JSON keys
+    /(\/\/.*$)|("(?:[^"\\]|\\.)*")\s*(:)|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/gm,
+    (match, comment, key, colon, str, bool, num) => {
+      if (comment) return `<span style="color:#8CA8A0;font-style:italic">${comment}</span>`;
+      if (key) return `<span style="color:#2d7d5a">${key}</span>${colon}`;
+      if (str) return `<span style="color:#b35c00">${str}</span>`;
+      if (bool) return `<span style="color:#7c5cbf">${bool}</span>`;
+      if (num) return `<span style="color:#1a6fb5">${num}</span>`;
+      return match;
+    }
+  );
+
+  return code;
+}
+
+/** Build the HTML for a fenced code block. */
+function buildCodeBlockHtml(codeLines, codeLang) {
+  const raw = codeLines.join("\n");
+  const highlighted = highlightCode(raw);
+  const langLabel = codeLang
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #D4F0EB;background:#F5F9F7"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#5E8078;text-transform:uppercase;letter-spacing:0.05em">${codeLang}</span></div>`
+    : "";
+  return (
+    `<div style="margin:12px 0;border-radius:8px;background:#F8FBF9;border:1px solid #D4F0EB;overflow:hidden">`
+    + langLabel
+    + `<pre style="margin:0;padding:16px 20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#1A2F2B;tab-size:2"><code>${highlighted}</code></pre>`
+    + `</div>`
+  );
+}
+
+/** Simple markdown → HTML (headers, bold, italic, code blocks, lists, paragraphs). */
 function renderMarkdown(text) {
   const lines = text.split("\n");
   const html = [];
   let inList = false;
+  let inCodeBlock = false;
+  let codeLines = [];
+  let codeLang = "";
 
   for (const line of lines) {
     const trimmed = line.trimEnd();
+
+    // Fenced code blocks
+    if (trimmed.startsWith("```")) {
+      if (!inCodeBlock) {
+        if (inList) { html.push("</ul>"); inList = false; }
+        inCodeBlock = true;
+        codeLines = [];
+        codeLang = trimmed.slice(3).trim();
+        continue;
+      } else {
+        html.push(buildCodeBlockHtml(codeLines, codeLang));
+        inCodeBlock = false;
+        codeLines = [];
+        codeLang = "";
+        continue;
+      }
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
 
     // Headings
     const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
@@ -371,6 +437,11 @@ function renderMarkdown(text) {
 
     // Paragraph
     html.push(`<div>${inlineFormat(trimmed)}</div>`);
+  }
+
+  // Close any unclosed code block
+  if (inCodeBlock) {
+    html.push(buildCodeBlockHtml(codeLines, codeLang));
   }
 
   if (inList) html.push("</ul>");
