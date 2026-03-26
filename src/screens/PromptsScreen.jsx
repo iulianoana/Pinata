@@ -8,6 +8,7 @@ const GROUPS = [
   { key: "carolina-voice", label: "Carolina Voice", icon: "\uD83C\uDF99\uFE0F" },
   { key: "lesson", label: "Lesson", icon: "\uD83D\uDCDA" },
   { key: "vocab", label: "Vocabulary", icon: "\uD83D\uDCD6" },
+  { key: "conjugar", label: "Conjugar", icon: "\uD83E\uDDE9" },
 ];
 
 const VAR_REGEX = /\{\{(\w+)\}\}/g;
