@@ -23,7 +23,6 @@ export const EXERCISE_TYPES = [
   "chat_bubble",
   "odd_one_out",
   "mini_story",
-  "conjugation_chain",
 ];
 
 export const PERSONS = [

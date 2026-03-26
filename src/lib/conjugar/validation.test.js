@@ -252,41 +252,6 @@ describe("checkExercise: mini_story", () => {
   });
 });
 
-// ── conjugation_chain ──
-
-describe("checkExercise: conjugation_chain", () => {
-  const exercise = {
-    type: "conjugation_chain",
-    verb: "hablar",
-    tenseLabel: "Presente",
-    chain: [
-      { person: "yo", correctAnswer: "hablo" },
-      { person: "tú", correctAnswer: "hablas" },
-      { person: "él/ella/usted", correctAnswer: "habla" },
-      { person: "nosotros", correctAnswer: "hablamos" },
-      { person: "vosotros", correctAnswer: "habláis" },
-      { person: "ellos/ellas", correctAnswer: "hablan" },
-    ],
-  };
-
-  it("all correct", () => {
-    const r = checkExercise(exercise, ["hablo", "hablas", "habla", "hablamos", "habláis", "hablan"]);
-    assert.equal(r.correct, true);
-    assert.equal(r.correctCount, 6);
-  });
-
-  it("4/6 correct → passes partial credit", () => {
-    const r = checkExercise(exercise, ["hablo", "hablas", "habla", "hablamos", "wrong", "wrong"]);
-    assert.equal(r.correct, true);
-    assert.equal(r.correctCount, 4);
-  });
-
-  it("3/6 correct → fails", () => {
-    const r = checkExercise(exercise, ["hablo", "hablas", "habla", "wrong", "wrong", "wrong"]);
-    assert.equal(r.correct, false);
-  });
-});
-
 // ── buildSession ──
 
 describe("buildSession", () => {

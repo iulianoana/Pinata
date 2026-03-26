@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { fetchDrillPacks, saveAttempt } from "@/lib/conjugar/api";
@@ -11,7 +11,6 @@ import SpotErrorExercise from "./exercises/SpotErrorExercise";
 import MultipleChoiceExercise from "./exercises/MultipleChoiceExercise";
 import ChatBubbleExercise from "./exercises/ChatBubbleExercise";
 import OddOneOutExercise from "./exercises/OddOneOutExercise";
-import ConjugationChainExercise from "./exercises/ConjugationChainExercise";
 import MiniStoryExercise from "./exercises/MiniStoryExercise";
 
 const STORAGE_KEY = "pinata_drill_session";
@@ -57,7 +56,6 @@ export function getSavedDrillSession() {
 
 export default function DrillSession({ packIds }) {
   const navigate = useNavigate();
-  const chainRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -114,8 +112,6 @@ export default function DrillSession({ packIds }) {
   const current = exercises[currentIndex];
   const currentFeedback = current ? feedbacks[current.id] : null;
   const isLast = currentIndex === exercises.length - 1;
-  const isChain = current?.type === "conjugation_chain";
-  const chainDone = isChain && !!feedbacks[current?.id];
 
   // ── Answer handler ──
   const handleAnswer = useCallback(
@@ -163,12 +159,6 @@ export default function DrillSession({ packIds }) {
   const handleCheck = useCallback(() => {
     if (!current || currentFeedback) return;
 
-    // For conjugation chain, delegate to the component
-    if (isChain && !chainDone) {
-      chainRef.current?.check();
-      return;
-    }
-
     const answer = answers[current.id];
     const result = checkExercise(current, answer);
     const newFeedbacks = { ...feedbacks, [current.id]: result };
@@ -181,27 +171,7 @@ export default function DrillSession({ packIds }) {
         setCurrentIndex((prev) => prev + 1);
       }
     }, 500);
-  }, [current, currentFeedback, isChain, chainDone, answers, feedbacks, isLast, finishDrill]);
-
-  // ── Chain completion handler ──
-  const handleChainComplete = useCallback(
-    (chainAnswers) => {
-      if (!current) return;
-      const result = checkExercise(current, chainAnswers);
-      const newFeedbacks = { ...feedbacks, [current.id]: result };
-      setFeedbacks(newFeedbacks);
-      setAnswers((prev) => ({ ...prev, [current.id]: chainAnswers }));
-
-      setTimeout(() => {
-        if (isLast) {
-          finishDrill(newFeedbacks);
-        } else {
-          setCurrentIndex((prev) => prev + 1);
-        }
-      }, 800);
-    },
-    [current, feedbacks, isLast, finishDrill]
-  );
+  }, [current, currentFeedback, answers, feedbacks, isLast, finishDrill]);
 
   // ── Skip handler ── (just advance; exercise stays unanswered so user can return)
   const handleSkip = useCallback(() => {
@@ -217,14 +187,14 @@ export default function DrillSession({ packIds }) {
   // ── Keyboard: Enter to check ──
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !isChain) {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleCheck();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleCheck, isChain]);
+  }, [handleCheck]);
 
   // ── Loading / Error states ──
   if (loading) {
@@ -275,15 +245,6 @@ export default function DrillSession({ packIds }) {
         return <ChatBubbleExercise {...props} />;
       case "odd_one_out":
         return <OddOneOutExercise {...props} />;
-      case "conjugation_chain":
-        return (
-          <ConjugationChainExercise
-            ref={chainRef}
-            exercise={current}
-            onAnswer={handleAnswer}
-            onComplete={handleChainComplete}
-          />
-        );
       case "mini_story":
         return <MiniStoryExercise {...props} />;
       default:

@@ -71,17 +71,6 @@ function checkMiniStory(exercise, answers) {
   return { correct: correctCount >= threshold, correctCount, total: blanks.length, details };
 }
 
-function checkConjugationChain(exercise, answers) {
-  let correctCount = 0;
-  const details = exercise.chain.map((item, i) => {
-    const isCorrect =
-      normalizeAnswer(answers?.[i]) === normalizeAnswer(item.correctAnswer);
-    if (isCorrect) correctCount++;
-    return { correct: isCorrect, expected: item.correctAnswer, person: item.person };
-  });
-  return { correct: correctCount >= 4, correctCount, total: exercise.chain.length, details };
-}
-
 // ── Main dispatcher ──
 
 export function checkExercise(exercise, userAnswer) {
@@ -100,8 +89,6 @@ export function checkExercise(exercise, userAnswer) {
       return checkOddOneOut(exercise, userAnswer);
     case "mini_story":
       return checkMiniStory(exercise, userAnswer);
-    case "conjugation_chain":
-      return checkConjugationChain(exercise, userAnswer);
     default:
       return { correct: false };
   }

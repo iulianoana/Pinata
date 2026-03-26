@@ -76,6 +76,11 @@ export async function POST(req, { params }) {
       return Response.json({ error: "Failed to parse AI response" }, { status: 502 });
     }
 
+    // Filter out deprecated exercise types the AI may still produce
+    if (aiData.exercises) {
+      aiData.exercises = aiData.exercises.filter((ex) => ex.type !== "conjugation_chain");
+    }
+
     const validated = aiResponseSchema.safeParse(aiData);
     if (!validated.success) {
       return Response.json({ error: validated.error.issues[0].message }, { status: 502 });

@@ -2,13 +2,12 @@ You are a Spanish language exercise generator. Generate exactly 14 conjugation e
 
 You must generate EXACTLY this distribution of exercise types:
 
-- 2x gap_fill (sentence with a blank where the conjugated verb goes)
+- 3x gap_fill (sentence with a blank where the conjugated verb goes)
 - 2x spot_error (sentence with a wrong conjugation that the student must identify)
-- 2x multiple_choice (sentence with blank + 4 options, only 1 correct)
+- 3x multiple_choice (sentence with blank + 4 options, only 1 correct)
 - 2x chat_bubble (simulated text message conversation with a blank)
 - 2x odd_one_out (4 conjugated forms, 1 doesn't belong to the target tense)
 - 2x mini_story (short paragraph with 2-3 blanks using the verb)
-- 2x conjugation_chain (rapid-fire: all 6 persons for this verb+tense)
 
 Rules:
 
@@ -20,7 +19,6 @@ Rules:
 - For odd_one_out: include 3 correct forms from the target tense + 1 from a different tense
 - For chat_bubble: create realistic text message exchanges between friends, family, or coworkers
 - For mini_story: create cohesive 2-3 sentence narratives
-- For conjugation_chain: always include all 6 persons in order (yo, tú, él/ella/usted, nosotros, vosotros, ellos/ellas)
 - Be creative with scenarios: daily life, work, travel, food, hobbies, social situations
 
 Additionally, include a "conjugationTable" object mapping each person to the correct conjugation of this verb in this tense. The persons must be: yo, tú, él/ella/usted, nosotros, vosotros, ellos/ellas.
@@ -34,7 +32,7 @@ Respond ONLY with valid JSON matching this exact schema. No markdown fences, no 
 ```
 {
   "exercises": [
-    // 2x gap_fill
+    // 3x gap_fill
     {
       "type": "gap_fill",
       "sentence": "Sentence with ___ for the blank",
@@ -51,7 +49,7 @@ Respond ONLY with valid JSON matching this exact schema. No markdown fences, no 
       "correctWord": "what it should be",
       "explanation": "Why this is wrong"
     },
-    // 2x multiple_choice
+    // 3x multiple_choice
     {
       "type": "multiple_choice",
       "sentence": "Sentence with ___ for blank",
@@ -89,20 +87,6 @@ Respond ONLY with valid JSON matching this exact schema. No markdown fences, no 
       ],
       "hint": "Brief contextual hint",
       "verb": "infinitive"
-    },
-    // 2x conjugation_chain
-    {
-      "type": "conjugation_chain",
-      "verb": "infinitive",
-      "tenseLabel": "Tense name",
-      "chain": [
-        { "person": "yo", "correctAnswer": "form" },
-        { "person": "tú", "correctAnswer": "form" },
-        { "person": "él/ella/usted", "correctAnswer": "form" },
-        { "person": "nosotros", "correctAnswer": "form" },
-        { "person": "vosotros", "correctAnswer": "form" },
-        { "person": "ellos/ellas", "correctAnswer": "form" }
-      ]
     }
   ],
   "conjugationTable": {

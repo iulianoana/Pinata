@@ -70,14 +70,7 @@ const miniStorySchema = z.object({
   verb: z.string(),
 });
 
-const conjugationChainSchema = z.object({
-  type: z.literal("conjugation_chain"),
-  verb: z.string(),
-  tenseLabel: z.string(),
-  chain: z.array(z.object({ person: z.string(), correctAnswer: z.string() })),
-});
-
-/** Discriminated union for the 7 AI-generated exercise types (excludes classic_table). */
+/** Discriminated union for the 6 AI-generated exercise types (excludes classic_table). */
 export const aiExerciseSchema = z.discriminatedUnion("type", [
   gapFillSchema,
   spotErrorSchema,
@@ -85,12 +78,11 @@ export const aiExerciseSchema = z.discriminatedUnion("type", [
   chatBubbleSchema,
   oddOneOutSchema,
   miniStorySchema,
-  conjugationChainSchema,
 ]);
 
 /** Full AI response: 14 exercises + a conjugation table for the classic_table. */
 export const aiResponseSchema = z.object({
-  exercises: z.array(aiExerciseSchema).length(14),
+  exercises: z.array(aiExerciseSchema).min(10).max(14),
   conjugationTable: z.record(z.string(), z.string()),
 });
 

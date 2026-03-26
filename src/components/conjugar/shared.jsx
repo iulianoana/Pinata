@@ -94,7 +94,6 @@ const EXERCISE_META = {
   chat_bubble: { label: "Conversación", color: "#7C3AED", icon: "\ud83d\udcac", bg: "#F5F3FF" },
   odd_one_out: { label: "El intruso", color: "#2563EB", icon: "\ud83e\udde9", bg: "#EFF6FF" },
   mini_story: { label: "Mini historia", color: "#0891B2", icon: "\ud83d\udcd6", bg: "#ECFEFF" },
-  conjugation_chain: { label: "Cadena rápida", color: "#CA8A04", icon: "\u26a1", bg: "#FEFCE8" },
 };
 
 export function getExerciseMeta(type) {
@@ -131,8 +130,6 @@ export function getExercisePreview(exercise) {
       return exercise.options.join(" / ");
     case "mini_story":
       return exercise.segments?.map((s) => s.isBlank ? "___" : s.text).join("") || "";
-    case "conjugation_chain":
-      return `\u26a1 ${exercise.chain?.map((c) => c.person).join(" \u2192 ")}...`;
     default:
       return "";
   }
