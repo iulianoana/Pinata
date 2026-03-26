@@ -487,24 +487,28 @@ function injectPromptStyles() {
       color:transparent;
       padding:0; margin:0; border:none;
     }
-    /* Sync scroll */
-    .prompt-editor-textarea::-webkit-scrollbar { width:6px; }
-    .prompt-editor-textarea::-webkit-scrollbar-thumb { background:#D4F0EB; border-radius:3px; }
+    /* Hide editor scrollbar — preview scrollbar serves both panes */
+    .prompt-editor-textarea::-webkit-scrollbar { display:none; }
+    .prompt-editor-textarea { -ms-overflow-style:none; scrollbar-width:none; }
+    .prompt-preview-scroll::-webkit-scrollbar { width:6px; }
+    .prompt-preview-scroll::-webkit-scrollbar-thumb { background:#D4F0EB; border-radius:3px; }
   `;
   document.head.appendChild(style);
 }
 
 // ── Editor with variable highlighting overlay ──
 
-function HighlightEditor({ value, onChange }) {
-  const textareaRef = useRef(null);
+function HighlightEditor({ value, onChange, textareaRef: externalRef, onScroll: onScrollProp }) {
+  const internalRef = useRef(null);
   const highlightRef = useRef(null);
+  const textareaRef = externalRef || internalRef;
 
   const handleScroll = () => {
     if (highlightRef.current && textareaRef.current) {
       highlightRef.current.scrollTop = textareaRef.current.scrollTop;
       highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
+    onScrollProp?.();
   };
 
   // Escape HTML first, then wrap {{variables}} in highlight spans.
@@ -550,6 +554,48 @@ export default function PromptsScreen() {
   const [editContent, setEditContent] = useState("");
   const [toast, setToast] = useState({ text: "", visible: false });
   const [saving, setSaving] = useState(false);
+
+  // Scroll sync refs
+  const editorTextareaRef = useRef(null);
+  const previewScrollRef = useRef(null);
+  const scrollSyncSource = useRef(null);
+  const scrollSyncTimer = useRef(null);
+
+  const handleEditorScroll = useCallback(() => {
+    if (scrollSyncSource.current === "preview") return;
+    scrollSyncSource.current = "editor";
+    const editor = editorTextareaRef.current;
+    const preview = previewScrollRef.current;
+    if (editor && preview) {
+      const max = editor.scrollHeight - editor.clientHeight;
+      if (max > 0) {
+        const ratio = editor.scrollTop / max;
+        preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
+      }
+    }
+    clearTimeout(scrollSyncTimer.current);
+    scrollSyncTimer.current = setTimeout(() => { scrollSyncSource.current = null; }, 30);
+  }, []);
+
+  const handlePreviewScroll = useCallback(() => {
+    if (scrollSyncSource.current === "editor") return;
+    scrollSyncSource.current = "preview";
+    const editor = editorTextareaRef.current;
+    const preview = previewScrollRef.current;
+    if (editor && preview) {
+      const max = preview.scrollHeight - preview.clientHeight;
+      if (max > 0) {
+        const ratio = preview.scrollTop / max;
+        const editorMax = editor.scrollHeight - editor.clientHeight;
+        editor.scrollTop = ratio * editorMax;
+        // Also sync highlight overlay
+        const highlight = editor.previousElementSibling;
+        if (highlight) highlight.scrollTop = editor.scrollTop;
+      }
+    }
+    clearTimeout(scrollSyncTimer.current);
+    scrollSyncTimer.current = setTimeout(() => { scrollSyncSource.current = null; }, 30);
+  }, []);
 
   // Inject styles
   useEffect(() => { injectPromptStyles(); }, []);
@@ -767,6 +813,8 @@ export default function PromptsScreen() {
                 <HighlightEditor
                   value={editContent}
                   onChange={setEditContent}
+                  textareaRef={editorTextareaRef}
+                  onScroll={handleEditorScroll}
                 />
               </div>
 
@@ -774,7 +822,10 @@ export default function PromptsScreen() {
               <div style={S.previewPane}>
                 <div style={S.previewLabel}>Preview</div>
                 <div
+                  ref={previewScrollRef}
+                  className="prompt-preview-scroll"
                   style={S.previewScroll}
+                  onScroll={handlePreviewScroll}
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(editContent) }}
                 />
               </div>
