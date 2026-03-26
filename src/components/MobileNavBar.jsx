@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { C } from "../styles/theme";
 
@@ -57,7 +58,7 @@ export default function MobileNavBar({ active }) {
     },
   ];
 
-  return (
+  return createPortal(
     <nav className="mobile-nav-bar" style={{
       position: "fixed", bottom: 0, left: 0, right: 0,
       background: C.card, borderTop: `1px solid ${C.border}`,
@@ -78,6 +79,7 @@ export default function MobileNavBar({ active }) {
           <span>{item.label}</span>
         </button>
       ))}
-    </nav>
+    </nav>,
+    document.body
   );
 }
