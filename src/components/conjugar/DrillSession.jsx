@@ -255,7 +255,7 @@ export default function DrillSession({ packIds }) {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-white">
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 shrink-0 safe-top">
         <button
           onClick={() => navigate("/conjugar")}
           className="text-sm font-semibold text-gray-500 hover:text-gray-700 flex items-center gap-1"

@@ -225,7 +225,7 @@ export default function ConjugarScreen({ session }) {
       {/* Mobile FAB - start drill */}
       {selectedPacks.length > 0 && (
         <div className="add-quiz-btn-mobile" style={{
-          position: "fixed", bottom: 72, left: 16, right: 16,
+          position: "fixed", bottom: "calc(72px + env(safe-area-inset-bottom, 0px))", left: 16, right: 16,
           zIndex: 40, display: "flex",
         }}>
           <button
