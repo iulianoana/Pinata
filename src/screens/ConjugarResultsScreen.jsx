@@ -52,8 +52,8 @@ export default function ConjugarResultsScreen({ session }) {
   };
 
   return (
-    <div className="desktop-main">
-      <div className="lessons-page fade-in safe-top" style={{
+    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+      <div className="desktop-main lessons-page safe-top" style={{
         paddingTop: 24, display: "flex", flexDirection: "column", alignItems: "center",
       }}>
         {/* Grade circle */}

@@ -70,8 +70,8 @@ export default function VocabularyScreen({ session }) {
 
   if (isLoading) {
     return (
-      <div className="desktop-main">
-        <div className="lessons-page fade-in safe-top" style={{ paddingTop: 16 }}>
+      <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+        <div className="desktop-main lessons-page safe-top" style={{ paddingTop: 16 }}>
           <div style={{ marginBottom: 24 }}>
             <div className="skeleton" style={{ width: 180, height: 32, marginBottom: 8 }} />
             <div className="skeleton" style={{ width: 80, height: 18 }} />
@@ -87,8 +87,8 @@ export default function VocabularyScreen({ session }) {
   }
 
   return (
-    <div className="desktop-main">
-      <div className="lessons-page fade-in safe-top" style={{ paddingTop: 16 }}>
+    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+      <div className="desktop-main lessons-page safe-top" style={{ paddingTop: 16 }}>
         {/* Header */}
         <div style={{
           display: "flex", alignItems: "flex-start", justifyContent: "space-between",

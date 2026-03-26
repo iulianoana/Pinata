@@ -38,8 +38,8 @@ export default function PackDetailScreen({ session }) {
   // ── Loading ──
   if (isLoading) {
     return (
-      <div className="desktop-main">
-        <div className="lessons-page fade-in safe-top" style={{ paddingTop: 16 }}>
+      <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+        <div className="desktop-main lessons-page safe-top" style={{ paddingTop: 16 }}>
           <div className="skeleton" style={{ width: 200, height: 28, marginBottom: 8 }} />
           <div className="skeleton" style={{ width: 140, height: 18, marginBottom: 24 }} />
           {[1, 2, 3, 4, 5].map((i) => (
@@ -53,8 +53,8 @@ export default function PackDetailScreen({ session }) {
 
   if (error || !pack || !verb) {
     return (
-      <div className="desktop-main">
-        <div className="lessons-page fade-in safe-top" style={{ paddingTop: 16, textAlign: "center", padding: "60px 20px" }}>
+      <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+        <div className="desktop-main lessons-page safe-top" style={{ paddingTop: 16, textAlign: "center", padding: "60px 20px" }}>
           <p style={{ color: C.muted, fontSize: 15, fontWeight: 600 }}>
             {error || "Pack no encontrado."}
           </p>
