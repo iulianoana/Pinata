@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { C } from "../styles/theme";
 import {
   fetchWeeks, createWeek, deleteWeek as apiDeleteWeek,
   createLesson, deleteLesson as apiDeleteLesson,
-  fetchQuizzes, uploadLessonPdf,
+  fetchQuizzes, uploadLessonPdf, fetchLessons,
 } from "../lib/api";
-import WeekCard from "../components/lessons/WeekCard";
+import { getAllPdfMeta } from "../lib/pdf-cache";
+import { Plus, Search, Download, X } from "lucide-react";
+import { Button } from "../components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import CurrentUnitSection from "../components/lessons/CurrentUnitSection";
+import CompletedUnitsSection from "../components/lessons/CompletedUnitsSection";
 import AddWeekModal from "../components/lessons/AddWeekModal";
 import AddLessonModal from "../components/lessons/AddLessonModal";
 import AddQuizModal from "../components/quizzes/AddQuizModal";
@@ -17,8 +24,6 @@ export default function LessonsScreen({ session }) {
   const navigate = useNavigate();
   const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedWeeks, setExpandedWeeks] = useState(new Set());
-  const [refreshKeys, setRefreshKeys] = useState({});
   const [showAddWeek, setShowAddWeek] = useState(false);
   const [addLessonWeek, setAddLessonWeek] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,38 +31,43 @@ export default function LessonsScreen({ session }) {
   const [quizCounts, setQuizCounts] = useState({ perLesson: {}, weekTotal: {} });
   const [addQuizWeek, setAddQuizWeek] = useState(null);
   const [addQuizLesson, setAddQuizLesson] = useState(null);
-  const [activeUnit, setActiveUnit] = useState(null); // null = "All"
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
-  const [uploadState, setUploadState] = useState(null); // { lessonId, progress, phase }
+  const [uploadState, setUploadState] = useState(null);
   const [generatePdfWeek, setGeneratePdfWeek] = useState(null);
+  const [pdfCachedMap, setPdfCachedMap] = useState(new Map());
+  const [currentUnitLessons, setCurrentUnitLessons] = useState(null);
+  const [currentUnitLoading, setCurrentUnitLoading] = useState(false);
+  const [refreshKeys, setRefreshKeys] = useState({});
 
-  const unitRefs = useRef({});
   const uploadRef = useRef(null);
   const uploadTargetRef = useRef(null);
-  const preSearchRef = useRef(null);
 
-  useEffect(() => { loadWeeks(); loadQuizCounts(); }, []);
+  useEffect(() => { loadWeeks(); loadQuizCounts(); loadPdfMeta(); }, []);
 
-  // Default: expand first unit once weeks load
+  /* ── Computed ── */
+
+  const currentWeek = useMemo(() => {
+    if (!weeks.length) return null;
+    return weeks.reduce((max, w) => w.week_number > max.week_number ? w : max, weeks[0]);
+  }, [weeks]);
+
+  const pastWeeks = useMemo(() => {
+    if (!currentWeek) return [];
+    return weeks.filter(w => w.id !== currentWeek.id).sort((a, b) => b.week_number - a.week_number);
+  }, [weeks, currentWeek]);
+
+  const currentRefreshKey = currentWeek ? (refreshKeys[currentWeek.id] || 0) : 0;
+
+  // Eagerly load lessons for the current unit
   useEffect(() => {
-    if (weeks.length > 0 && expandedWeeks.size === 0 && !loading) {
-      setExpandedWeeks(new Set([weeks[0].id]));
-    }
-  }, [weeks, loading]);
+    if (!currentWeek) return;
+    setCurrentUnitLoading(true);
+    fetchLessons(currentWeek.id)
+      .then(setCurrentUnitLessons)
+      .catch(() => setCurrentUnitLessons([]))
+      .finally(() => setCurrentUnitLoading(false));
+  }, [currentWeek?.id, currentRefreshKey]);
 
-  // Search: expand all units, restore on clear
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      if (!preSearchRef.current) preSearchRef.current = new Set(expandedWeeks);
-      setExpandedWeeks(new Set(weeks.map(w => w.id)));
-    } else if (preSearchRef.current) {
-      setExpandedWeeks(preSearchRef.current);
-      preSearchRef.current = null;
-    }
-  }, [searchQuery]);
-
-
-  /* ── data fetching (unchanged) ── */
+  /* ── Data fetching ── */
 
   const loadWeeks = async () => {
     try { setWeeks(await fetchWeeks()); }
@@ -81,6 +91,11 @@ export default function LessonsScreen({ session }) {
     } catch (e) { console.error("Failed to load quiz counts:", e); }
   };
 
+  const loadPdfMeta = async () => {
+    try { setPdfCachedMap(await getAllPdfMeta()); }
+    catch (e) { console.error("Failed to load pdf meta:", e); }
+  };
+
   const bumpRefreshKey = (weekId) =>
     setRefreshKeys(prev => ({ ...prev, [weekId]: (prev[weekId] || 0) + 1 }));
 
@@ -89,24 +104,15 @@ export default function LessonsScreen({ session }) {
     return Math.max(...weeks.map(w => w.week_number)) + 1;
   }, [weeks]);
 
-  /* ── handlers (unchanged) ── */
+  // Placeholder — wire real completion data later
+  const completedLessonIds = useMemo(() => new Set(), []);
 
-  const toggleWeek = (weekId) =>
-    setExpandedWeeks(prev => {
-      const next = new Set(prev);
-      next.has(weekId) ? next.delete(weekId) : next.add(weekId);
-      return next;
-    });
+  /* ── Handlers ── */
 
   const handleCreateWeek = async (weekNumber, title) => {
     const newWeek = await createWeek(weekNumber, title);
-    // Optimistic update — add to state immediately
     const updated = [...weeks, { ...newWeek, lesson_count: 0 }].sort((a, b) => a.week_number - b.week_number);
     setWeeks(updated);
-    const newIdx = updated.findIndex(w => w.id === newWeek.id);
-    setActiveUnit(newIdx);
-    setExpandedWeeks(prev => new Set([...prev, newWeek.id]));
-    // Background re-fetch for accurate data
     loadWeeks();
   };
 
@@ -122,7 +128,6 @@ export default function LessonsScreen({ session }) {
     try {
       if (deleteConfirm.type === "week") {
         await apiDeleteWeek(deleteConfirm.item.id);
-        setExpandedWeeks(prev => { const n = new Set(prev); n.delete(deleteConfirm.item.id); return n; });
         await loadWeeks(); loadQuizCounts();
       } else {
         await apiDeleteLesson(deleteConfirm.item.id);
@@ -146,12 +151,10 @@ export default function LessonsScreen({ session }) {
   const handleAddLesson = async (title, markdownContent) => {
     if (!addLessonWeek) return;
     await createLesson(addLessonWeek.id, title, markdownContent);
-    // Optimistic update — bump lesson count immediately
     setWeeks(prev => prev.map(w =>
       w.id === addLessonWeek.id ? { ...w, lesson_count: (w.lesson_count || 0) + 1 } : w
     ));
     bumpRefreshKey(addLessonWeek.id);
-    // Background re-fetch for accurate data
     loadWeeks();
   };
 
@@ -172,6 +175,7 @@ export default function LessonsScreen({ session }) {
         (phase) => setUploadState(prev => prev ? { ...prev, phase } : null),
       );
       bumpRefreshKey(target.weekId);
+      loadPdfMeta();
     } catch (err) { console.error("Upload failed:", err); }
     finally { setUploadState(null); }
     uploadTargetRef.current = null;
@@ -180,243 +184,139 @@ export default function LessonsScreen({ session }) {
 
   const handleQuizAdded = () => loadQuizCounts();
 
-  const filterToUnit = (index) => setActiveUnit(index);
-
-  /* ── computed ── */
+  /* ── Totals ── */
 
   const totalLessons = weeks.reduce((s, w) => s + (w.lesson_count || 0), 0);
   const totalQuizzes = Object.values(quizCounts.weekTotal).reduce((s, v) => s + v, 0);
 
-  /* ── render ── */
+  /* ── Render ── */
 
   return (
-    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+    <div className="fade-in min-h-screen bg-background">
       <div className="safe-top desktop-main lessons-page">
 
-        {/* ─── Title ─── */}
-        <div style={{ paddingTop: 16, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        {/* ─── Header ─── */}
+        <div className="flex items-start justify-between pt-4 mb-4">
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1.2, fontFamily: "'Nunito', sans-serif" }}>
+            <h1 className="text-[28px] font-black text-foreground leading-tight font-['Nunito',sans-serif]">
               Lessons
             </h1>
-            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+            <p className="text-muted-foreground text-sm font-semibold mt-1">
               {weeks.length} unit{weeks.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
               {totalQuizzes > 0 && <> · {totalQuizzes} quiz{totalQuizzes !== 1 ? "zes" : ""}</>}
             </p>
           </div>
 
-          {/* Mobile "+" button (hidden on desktop where toolbar has "New unit") */}
-          <div className="fab-new-week" style={{ position: "relative" }}>
-            <button
-              onClick={() => setFabMenuOpen(f => !f)}
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                border: `1.5px solid ${C.border}`, background: C.card,
-                color: C.muted, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "border-color 0.15s, color 0.15s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+          {/* Desktop buttons */}
+          <div className="hidden sm:flex items-center gap-2.5">
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              <Download className="w-3.5 h-3.5" />
+              Batch upload
+            </Button>
+            <Button size="sm" onClick={() => setShowAddWeek(true)}>
+              <Plus className="w-3.5 h-3.5" />
+              New unit
+            </Button>
+          </div>
+
+          {/* Mobile + button */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowAddWeek(true)}>
+                  New unit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (currentWeek) setAddLessonWeek(currentWeek);
+                }}>
+                  New lesson
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* ─── Search ─── */}
+        <div className="flex items-center gap-2 px-3.5 py-2.5 bg-background border rounded-xl mb-2">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search lessons..."
+            className="flex-1 bg-transparent border-none outline-none text-sm font-semibold text-foreground placeholder:text-muted-foreground font-['Nunito',sans-serif]"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
             </button>
-            {fabMenuOpen && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 19 }} onClick={() => setFabMenuOpen(false)} />
-                <div style={{
-                  position: "absolute", right: 0, top: "100%", marginTop: 4, zIndex: 20,
-                  background: C.card, borderRadius: 12, padding: 4,
-                  boxShadow: "0 4px 16px rgba(0,60,50,0.12)",
-                  border: `1px solid ${C.border}`, minWidth: 150,
-                  animation: "fadeIn 0.1s ease-out",
-                }}>
-                  <button onClick={() => { setFabMenuOpen(false); setShowAddWeek(true); }} style={{
-                    display: "flex", alignItems: "center", gap: 8, width: "100%",
-                    padding: "10px 12px", border: "none", background: "transparent",
-                    color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
-                    fontFamily: "'Nunito', sans-serif", borderRadius: 8, textAlign: "left",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    New unit
-                  </button>
-                  <button onClick={() => {
-                    setFabMenuOpen(false);
-                    if (weeks.length) {
-                      const expandedId = [...expandedWeeks][0] || weeks[0].id;
-                      setAddLessonWeek(weeks.find(w => w.id === expandedId) || weeks[0]);
-                    }
-                  }} style={{
-                    display: "flex", alignItems: "center", gap: 8, width: "100%",
-                    padding: "10px 12px", border: "none", background: "transparent",
-                    color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
-                    fontFamily: "'Nunito', sans-serif", borderRadius: 8, textAlign: "left",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    New lesson
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* ─── Toolbar ─── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          {/* Search input */}
-          <div style={{
-            flex: 1, display: "flex", alignItems: "center", gap: 8,
-            background: C.card, border: `1.5px solid ${C.border}`,
-            borderRadius: 12, padding: "10px 14px",
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text" value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search lessons..."
-              style={{
-                flex: 1, border: "none", outline: "none", background: "transparent",
-                fontSize: 14, fontWeight: 600, color: C.text, fontFamily: "'Nunito', sans-serif",
-              }}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} style={{
-                background: "none", border: "none", color: C.muted,
-                cursor: "pointer", padding: 0, fontSize: 18, lineHeight: 1,
-              }}>×</button>
-            )}
-          </div>
-
-          {/* Batch upload — desktop only, placeholder */}
-          <button className="batch-upload-v2" disabled style={{
-            display: "none", alignItems: "center", gap: 6,
-            padding: "10px 16px", borderRadius: 12,
-            border: `1.5px solid ${C.border}`, background: C.card,
-            color: C.text, fontWeight: 700, fontSize: 14,
-            cursor: "not-allowed", fontFamily: "'Nunito', sans-serif",
-            opacity: 0.6, whiteSpace: "nowrap", flexShrink: 0,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Batch upload
-          </button>
-
-          {/* + New unit — desktop only */}
-          <button className="toolbar-newunit-v2" onClick={() => setShowAddWeek(true)} style={{
-            display: "none", alignItems: "center", gap: 6,
-            padding: "10px 18px", borderRadius: 12, border: "none",
-            background: C.accent, color: "#fff", fontWeight: 800, fontSize: 14,
-            cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-            whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.08)")}
-          onMouseLeave={e => (e.currentTarget.style.filter = "none")}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New unit
-          </button>
-        </div>
-
-        {/* ─── Sticky pill nav ─── */}
-        {weeks.length > 0 && (
-          <div style={{ position: "sticky", top: 0, zIndex: 10, background: C.bg, padding: "6px 0 10px" }}>
-            <div className="unit-pill-nav">
-              <button onClick={() => filterToUnit(null)} style={{
-                padding: "6px 14px", borderRadius: 20,
-                border: `1.5px solid ${activeUnit === null ? C.accent : C.border}`,
-                background: activeUnit === null ? C.accentLight : C.card,
-                color: activeUnit === null ? C.accent : C.muted,
-                fontWeight: activeUnit === null ? 800 : 700,
-                fontSize: 13, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-                whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s",
-              }}>
-                All
-              </button>
-              {weeks.map((w, i) => (
-                <button key={w.id} onClick={() => filterToUnit(i)} style={{
-                  padding: "6px 14px", borderRadius: 20,
-                  border: `1.5px solid ${activeUnit === i ? C.accent : C.border}`,
-                  background: activeUnit === i ? C.accentLight : C.card,
-                  color: activeUnit === i ? C.accent : C.muted,
-                  fontWeight: activeUnit === i ? 800 : 700,
-                  fontSize: 13, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-                  whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s",
-                }}>
-                  Unit {w.week_number}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ─── Unit sections ─── */}
+        {/* ─── Content ─── */}
         {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+          <div className="flex flex-col gap-3 mt-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="skeleton skeleton-glow" style={{ height: 72, borderRadius: 14 }} />
+              <div key={i} className="skeleton skeleton-glow h-[72px] rounded-xl" />
             ))}
           </div>
         ) : weeks.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 20px" }}>
-            <p style={{ color: C.text, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No units yet</p>
-            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>
+          <div className="text-center py-12">
+            <p className="text-foreground text-lg font-extrabold mb-1">No units yet</p>
+            <p className="text-muted-foreground text-sm font-semibold leading-relaxed">
               Create your first unit to start adding lessons!
             </p>
           </div>
         ) : (
-          <div style={{ marginTop: 4 }}>
-            {weeks.map((week, i) => {
-              if (activeUnit !== null && activeUnit !== i) return null;
-              return (
-              <div key={week.id}>
-                {i > 0 && !searchQuery.trim() && activeUnit === null && <div className="unit-divider-band" />}
-                <div
-                  ref={el => { unitRefs.current[week.id] = el; }}
-                  data-week-id={week.id}
-                >
-                  <WeekCard
-                    week={week}
-                    expanded={expandedWeeks.has(week.id)}
-                    refreshKey={refreshKeys[week.id] || 0}
-                    searchQuery={searchQuery}
-                    onToggle={() => toggleWeek(week.id)}
-                    onSelectLesson={handleSelectLesson}
-                    onAddLesson={() => {
-                      setAddLessonWeek(week);
-                      setExpandedWeeks(prev => new Set([...prev, week.id]));
-                    }}
-                    onDeleteLesson={l => handleDeleteLesson(l, week.id)}
-                    onDeleteWeek={handleDeleteWeek}
-                    onUploadPdf={l => handleUploadPdf(l, week.id)}
-                    onAddQuizLesson={l => setAddQuizLesson(l)}
-                    quizCounts={quizCounts}
-                    uploadState={uploadState}
-                    onAddUnitQuiz={() => setAddQuizWeek(week)}
-                    onGenerateFromPdf={() => setGeneratePdfWeek(week)}
-                  />
-                </div>
-              </div>
-              );
-            })}
-          </div>
+          <>
+            {/* Current unit hero section */}
+            {currentWeek && (
+              <CurrentUnitSection
+                week={currentWeek}
+                lessons={currentUnitLessons}
+                loading={currentUnitLoading}
+                searchQuery={searchQuery}
+                quizCounts={quizCounts}
+                pdfCachedMap={pdfCachedMap}
+                completedLessonIds={completedLessonIds}
+                uploadState={uploadState}
+                onSelectLesson={handleSelectLesson}
+                onAddLesson={() => {
+                  setAddLessonWeek(currentWeek);
+                }}
+                onDeleteLesson={(l) => handleDeleteLesson(l, currentWeek.id)}
+                onUploadPdf={(l) => handleUploadPdf(l, currentWeek.id)}
+                onAddQuizLesson={(l) => setAddQuizLesson(l)}
+                onGenerateFromPdf={() => setGeneratePdfWeek(currentWeek)}
+                onDeleteWeek={() => handleDeleteWeek(currentWeek)}
+              />
+            )}
+
+            {/* Completed units section */}
+            {pastWeeks.length > 0 && (
+              <CompletedUnitsSection
+                weeks={pastWeeks}
+                quizCounts={quizCounts}
+                searchQuery={searchQuery}
+                pdfCachedMap={pdfCachedMap}
+                completedLessonIds={completedLessonIds}
+                onSelectLesson={handleSelectLesson}
+                onDeleteWeek={handleDeleteWeek}
+              />
+            )}
+          </>
         )}
       </div>
 
       {/* Hidden PDF upload input */}
-      <input ref={uploadRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleFileSelected} />
+      <input ref={uploadRef} type="file" accept=".pdf" className="hidden" onChange={handleFileSelected} />
 
-
-
-      {/* ─── Modals ─── */}
+      {/* ─── Modals (unchanged) ─── */}
       <AddWeekModal
         open={showAddWeek}
         onClose={() => setShowAddWeek(false)}
