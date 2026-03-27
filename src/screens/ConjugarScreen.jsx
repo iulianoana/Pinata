@@ -25,9 +25,15 @@ export default function ConjugarScreen({ session }) {
   }, []);
 
   const filtered = useMemo(() => {
-    if (filter === "Todos") return verbs;
-    const type = filter.replace("-", "");
-    return verbs.filter((v) => v.verb_type === type);
+    const base = filter === "Todos" ? verbs : verbs.filter((v) => v.verb_type === filter.replace("-", ""));
+    return [...base].sort((a, b) => {
+      const attemptsA = (a.packs || []).reduce((s, p) => s + (p.attemptCount || 0), 0);
+      const attemptsB = (b.packs || []).reduce((s, p) => s + (p.attemptCount || 0), 0);
+      // Unattempted (0) first, then fewest attempts
+      if (attemptsA === 0 && attemptsB > 0) return -1;
+      if (attemptsB === 0 && attemptsA > 0) return 1;
+      return attemptsA - attemptsB;
+    });
   }, [verbs, filter]);
 
   const totalPacks = verbs.reduce((sum, v) => sum + (v.packs?.length || 0), 0);
