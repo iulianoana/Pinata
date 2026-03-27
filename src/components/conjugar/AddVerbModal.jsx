@@ -64,9 +64,6 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
     if (verbs.length === 0) {
       errs.push("Ingresa al menos un verbo.");
     }
-    if (verbs.length > 3) {
-      errs.push("Máximo 3 verbos por generación.");
-    }
     for (const v of verbs) {
       if (!detectVerbType(v)) {
         errs.push(`"${v}" no es un infinitivo válido (debe terminar en -ar, -er o -ir).`);
@@ -113,7 +110,13 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
   };
 
   const parsedVerbs = parseVerbs();
-  const isValid = parsedVerbs.length > 0 && parsedVerbs.length <= 3 && parsedVerbs.every((v) => detectVerbType(v));
+  const invalidVerbs = parsedVerbs.filter((v) => !detectVerbType(v));
+  const isValid = parsedVerbs.length > 0 && invalidVerbs.length === 0;
+  const disabledReason = parsedVerbs.length === 0
+    ? "Ingresa al menos un verbo"
+    : invalidVerbs.length > 0
+      ? `Verbo${invalidVerbs.length > 1 ? "s" : ""} no válido${invalidVerbs.length > 1 ? "s" : ""}: ${invalidVerbs.join(", ")}`
+      : null;
 
   const content = generating ? (
     <GeneratingState step={progressStep} verbs={progressVerbs} />
@@ -125,6 +128,7 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
       setTense={setTense}
       errors={errors}
       isValid={isValid}
+      disabledReason={disabledReason}
       onGenerate={handleGenerate}
       onClose={onClose}
     />
@@ -178,7 +182,7 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
 }
 
 // ── Form content ──
-function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid, onGenerate, onClose }) {
+function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid, disabledReason, onGenerate, onClose }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Verb input */}
@@ -204,7 +208,7 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
           onBlur={(e) => { e.target.style.borderColor = C.border; }}
         />
         <p style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 4 }}>
-          Separa con comas o saltos de línea. Máximo 3 verbos por generación.
+          Separa con comas o saltos de línea.
         </p>
       </div>
 
@@ -278,19 +282,23 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
         >
           Cancelar
         </button>
-        <button
-          onClick={onGenerate}
-          disabled={!isValid}
-          style={{
-            padding: "10px 22px", borderRadius: 12, border: "none",
-            background: isValid ? C.accent : "#E5E7EB",
-            color: isValid ? "white" : "#9CA3AF",
-            fontSize: 14, fontWeight: 800, cursor: isValid ? "pointer" : "not-allowed",
-            fontFamily: "'Nunito', sans-serif", flex: 1,
-          }}
+        <div style={{ flex: 1, position: "relative" }}
+          {...(!isValid && disabledReason ? { title: disabledReason } : {})}
         >
-          {"\u2726"} Generar con IA
-        </button>
+          <button
+            onClick={onGenerate}
+            disabled={!isValid}
+            style={{
+              width: "100%", padding: "10px 22px", borderRadius: 12, border: "none",
+              background: isValid ? C.accent : "#E5E7EB",
+              color: isValid ? "white" : "#9CA3AF",
+              fontSize: 14, fontWeight: 800, cursor: isValid ? "pointer" : "not-allowed",
+              fontFamily: "'Nunito', sans-serif",
+            }}
+          >
+            {"\u2726"} Generar con IA
+          </button>
+        </div>
       </div>
     </div>
   );

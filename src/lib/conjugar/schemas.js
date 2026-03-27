@@ -101,7 +101,7 @@ export const aiResponseSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export const createVerbsSchema = z.object({
-  infinitives: z.array(z.string().trim().min(1)).min(1).max(3),
+  infinitives: z.array(z.string().trim().min(1)).min(1).max(20),
 });
 
 export const generatePacksSchema = z.object({
