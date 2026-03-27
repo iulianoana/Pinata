@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CheckCircle2, Circle, MoreVertical, Plus, Sparkles, Upload, Star, Trash2, Check } from "lucide-react";
+import { MoreVertical, Plus, Sparkles, Upload, Star, Trash2, Check } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -172,25 +172,18 @@ function DesktopLessonRow({ lesson, isCompleted, pdfCached, quizCount, uploadSta
     <TableRow className="cursor-pointer" onClick={onSelect}>
       {/* Status + Title + Description */}
       <TableCell>
-        <div className="flex items-start gap-3">
-          {isCompleted ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-500 shrink-0 mt-0.5" />
-          ) : (
-            <Circle className="w-5 h-5 text-gray-300 shrink-0 mt-0.5" />
-          )}
-          <div className="min-w-0">
-            <div className={cn(
-              "text-sm font-medium truncate",
-              isCompleted ? "line-through text-muted-foreground" : "text-foreground"
-            )}>
-              {lesson.title}
-            </div>
-            {description && (
-              <div className="text-xs text-muted-foreground truncate mt-0.5">
-                {description}
-              </div>
-            )}
+        <div className="min-w-0">
+          <div className={cn(
+            "text-sm font-medium truncate",
+            isCompleted ? "line-through text-muted-foreground" : "text-foreground"
+          )}>
+            {lesson.title}
           </div>
+          {description && (
+            <div className="text-xs text-muted-foreground truncate mt-0.5">
+              {description}
+            </div>
+          )}
         </div>
       </TableCell>
 
@@ -275,16 +268,7 @@ function MobileLessonRow({ lesson, isCompleted, pdfCached, quizCount, uploadStat
   }
 
   return (
-    <div className="flex items-start gap-3 px-3 py-3 cursor-pointer" onClick={onSelect}>
-      {/* Status icon */}
-      <div className="pt-0.5 shrink-0">
-        {isCompleted ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-500" />
-        ) : (
-          <Circle className="w-5 h-5 text-gray-300" />
-        )}
-      </div>
-
+    <div className="flex items-start gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={onSelect}>
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className={cn(

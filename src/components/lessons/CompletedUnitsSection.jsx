@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, CheckCircle2, Circle, Check } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { cn } from "../../lib/utils";
 import { fetchLessons } from "../../lib/api";
@@ -215,7 +215,7 @@ function UnitRows({
             return (
               <TableRow
                 key={lesson.id}
-                className="cursor-pointer hover:bg-muted/50 border-0"
+                className="cursor-pointer hover:bg-gray-50 border-0"
                 onClick={() => onSelectLesson(lesson)}
               >
                 {/* Spacer for chevron */}
@@ -226,12 +226,7 @@ function UnitRows({
 
                 {/* Lesson title with icon */}
                 <TableCell>
-                  <div className="flex items-center gap-2.5 pl-2">
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500 shrink-0" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 shrink-0" />
-                    )}
+                  <div className="pl-2">
                     <span className={cn(
                       "text-sm font-medium truncate",
                       isCompleted ? "line-through text-muted-foreground" : "text-foreground"
