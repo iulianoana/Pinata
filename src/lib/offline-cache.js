@@ -10,6 +10,15 @@ db.version(1).stores({
   quizData: "id",           // full quiz_data blobs keyed by quiz id
   apiResponses: "key",      // generic key-value for API responses
 });
+db.version(2).stores({
+  weeks: "id",
+  lessons: "id, week_id",
+  quizzes: "id, lesson_id, week_id",
+  quizData: "id",
+  apiResponses: "key",
+  verbs: "id",                      // conjugation verbs (with pack metadata)
+  drillPacks: "id, verb_id, tense", // full exercise blobs for drills
+});
 
 // ── Weeks ──
 
@@ -63,10 +72,41 @@ export async function getCachedQuizData(id) {
   return entry ? { id: entry.id, data: entry.data } : null;
 }
 
+// ── Conjugation: Verbs ──
+
+export async function cacheVerbs(verbs) {
+  await db.verbs.bulkPut(verbs);
+}
+
+export async function getCachedVerbs() {
+  return db.verbs.toArray();
+}
+
+// ── Conjugation: Drill Packs (full exercise blobs) ──
+
+export async function cacheDrillPacks(packs) {
+  if (!packs || packs.length === 0) return;
+  await db.drillPacks.bulkPut(packs);
+}
+
+export async function getCachedDrillPacksByIds(packIds) {
+  if (!packIds || packIds.length === 0) return [];
+  return db.drillPacks.where("id").anyOf(packIds).toArray();
+}
+
+export async function getCachedDrillPacksByVerb(verbId) {
+  return db.drillPacks.where("verb_id").equals(verbId).toArray();
+}
+
+export async function getCachedDrillPacksByVerbs(verbIds) {
+  if (!verbIds || verbIds.length === 0) return [];
+  return db.drillPacks.where("verb_id").anyOf(verbIds).toArray();
+}
+
 // ── Prefetch all data for offline use ──
 
 export async function prefetchAll(fetchWeeksFn, fetchLessonsFn, fetchQuizzesFn, options = {}) {
-  const { onProgress } = options;
+  const { onProgress, fetchVerbsFn, fetchPacksByIdsFn } = options;
 
   try {
     // Phase 1: metadata
@@ -154,6 +194,24 @@ export async function prefetchAll(fetchWeeksFn, fetchLessonsFn, fetchQuizzesFn, 
       if (lessonsWithoutPdf.has(lessonId)) {
         await removeCachedPdf(lessonId);
       }
+    }
+
+    // Phase 5: Conjugation — verbs + full drill packs (exercises)
+    if (fetchVerbsFn && fetchPacksByIdsFn) {
+      try {
+        onProgress?.("verbs", 0, 1);
+        const verbs = await fetchVerbsFn();
+        await cacheVerbs(verbs);
+        onProgress?.("verbs", 1, 1);
+
+        const verbIds = verbs.map((v) => v.id);
+        if (verbIds.length > 0) {
+          onProgress?.("drillPacks", 0, 1);
+          const { packs } = await fetchPacksByIdsFn(verbIds);
+          await cacheDrillPacks(packs || []);
+          onProgress?.("drillPacks", 1, 1);
+        }
+      } catch { /* skip on failure — verbs stay uncached this sync */ }
     }
 
     // Save timestamp

@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabase.js";
 import { flush, usePendingCount } from "./lib/syncQueue.js";
 import { prefetchAll } from "./lib/offline-cache.js";
 import { fetchWeeks, fetchLessons, fetchQuizzes } from "./lib/api.js";
+import { fetchVerbs, fetchPacksByIds } from "./lib/conjugar/api.js";
 import { C } from "./styles/theme";
 import LoginScreen from "./screens/LoginScreen";
 import QuizzesScreen from "./screens/QuizzesScreen";
@@ -51,7 +52,10 @@ export default function App() {
   // Sync queue + deferred offline prefetch
   useEffect(() => {
     flush();
-    const deferPrefetch = () => setTimeout(() => prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes), 5000);
+    const deferPrefetch = () => setTimeout(() => prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes, {
+      fetchVerbsFn: fetchVerbs,
+      fetchPacksByIdsFn: fetchPacksByIds,
+    }), 5000);
     if (navigator.onLine) deferPrefetch();
     const handleOnline = () => { flush(); deferPrefetch(); };
     window.addEventListener("online", handleOnline);

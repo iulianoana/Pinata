@@ -5,6 +5,7 @@ import { getOfflineStatus, getWeekCacheStatus } from "../lib/offlineStatus";
 import { prefetchAll, cacheQuizData } from "../lib/offline-cache";
 import { cachePdf } from "../lib/pdf-cache";
 import { fetchWeeks, fetchLessons, fetchQuizzes, fetchQuizData, getLessonPdfUrl } from "../lib/api";
+import { fetchVerbs, fetchPacksByIds } from "../lib/conjugar/api";
 import { relativeTime } from "../utils/helpers";
 
 
@@ -186,6 +187,8 @@ export default function StorageScreen({ session }) {
     setSyncProgress({ phase: "metadata", current: 0, total: 1 });
     try {
       await prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes, {
+        fetchVerbsFn: fetchVerbs,
+        fetchPacksByIdsFn: fetchPacksByIds,
         onProgress: (phase, current, total) => {
           setSyncProgress({ phase, current, total });
         },
@@ -236,6 +239,8 @@ export default function StorageScreen({ session }) {
     quizzes: "Downloading quizzes...",
     lessons: "Downloading lessons...",
     pdfs: "Downloading PDFs...",
+    verbs: "Downloading verbs...",
+    drillPacks: "Downloading conjugation exercises...",
   };
 
   // Count total cached / total items
