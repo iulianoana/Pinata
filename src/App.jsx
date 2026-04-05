@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useQuizHistory } from "./useQuizHistory.js";
-import { supabase } from "./lib/supabase.js";
+import { supabase, getCachedSession } from "./lib/supabase.js";
 import { flush, usePendingCount } from "./lib/syncQueue.js";
 import { prefetchAll } from "./lib/offline-cache.js";
 import { fetchWeeks, fetchLessons, fetchQuizzes } from "./lib/api.js";
@@ -42,11 +42,37 @@ export default function App() {
 
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Seed session synchronously from localStorage so we never get stuck on
+    // the Loading screen. When offline with an expired access token, supabase
+    // .auth.getSession() retries the refresh endpoint for up to 30s before
+    // resolving — that's what left users stranded on "Loading..." in flight mode.
+    const cached = getCachedSession();
+    setSession(cached);
+
+    // Validate/refresh in the background. When online this will hand back a
+    // fresh session (or null if signed out). When offline it eventually fails
+    // with AuthRetryableFetchError — in that case we keep the cached session.
     supabase.auth.getSession()
-      .then(({ data: { session: s } }) => setSession(s))
-      .catch(() => setSession(null));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => subscription.unsubscribe();
+      .then(({ data: { session: s }, error }) => {
+        if (cancelled) return;
+        if (s) { setSession(s); return; }
+        // Network failure (offline / Supabase unreachable): keep cached session.
+        if (error && error.name === "AuthRetryableFetchError") return;
+        // Authoritative null (no stored session, or server rejected refresh).
+        setSession(null);
+      })
+      .catch(() => { /* keep cached session */ });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      if (cancelled) return;
+      // INITIAL_SESSION fires after getSession() resolves — when offline that's
+      // a null emitted ~30s later. Ignore it; we've already seeded from cache.
+      if (event === "INITIAL_SESSION" && !s) return;
+      setSession(s);
+    });
+    return () => { cancelled = true; subscription.unsubscribe(); };
   }, []);
 
   // Sync queue + deferred offline prefetch

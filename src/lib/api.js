@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js";
+import { supabase, getCachedSession } from "./supabase.js";
 import {
   cacheWeeks, getCachedWeeks,
   cacheLessons, getCachedLessons, cacheLesson, getCachedLesson,
@@ -6,9 +6,13 @@ import {
 } from "./offline-cache.js";
 
 async function authHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
+  // Read the session from localStorage directly. Calling
+  // supabase.auth.getSession() here would block for up to 30s per API call
+  // when offline with an expired token (it retries the refresh endpoint).
+  // Supabase's auto-refresh ticker keeps the cached session fresh while online.
+  const session = getCachedSession();
   return {
-    Authorization: `Bearer ${session?.access_token}`,
+    Authorization: `Bearer ${session?.access_token || ""}`,
     "Content-Type": "application/json",
   };
 }
@@ -195,11 +199,11 @@ export async function uploadLessonPdf(lessonId, file, onProgress, onPhase) {
   }
 
   onPhase?.("uploading");
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = getCachedSession();
   const xhr = new XMLHttpRequest();
   return new Promise((resolve, reject) => {
     xhr.open("PUT", `/api/lessons/${lessonId}/pdf`);
-    xhr.setRequestHeader("Authorization", `Bearer ${session?.access_token}`);
+    xhr.setRequestHeader("Authorization", `Bearer ${session?.access_token || ""}`);
     if (onProgress) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
