@@ -799,14 +799,15 @@ export default function CarolinaScreen({ session }) {
   // Fetch available resources
   const availableResourcesRef = useRef([]);
   useEffect(() => {
-    getAuthHeaders()
-      .then((headers) => fetch("/api/carolina/resources", { headers }))
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
+    (async () => {
+      try {
+        const headers = getAuthHeaders();
+        const res = await fetch("/api/carolina/resources", { headers });
+        const data = res.ok ? await res.json() : [];
         setAvailableResources(data);
         availableResourcesRef.current = data;
-      })
-      .catch(() => {});
+      } catch {}
+    })();
   }, []);
 
   // Auto-scroll to bottom
