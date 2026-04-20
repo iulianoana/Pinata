@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getCachedSession } from "../supabase.js";
+import { enqueue } from "../syncQueue.js";
+import { calculateGrade } from "./constants.js";
 import {
   cacheVerbs,
   getCachedVerbs,
@@ -62,22 +64,7 @@ export function useVerbs() {
   return { data, isLoading, error, refresh: fetch_ };
 }
 
-// ── Create verbs ──
-export async function createVerbs(infinitives) {
-  const headers = await authHeaders();
-  const res = await fetch("/api/conjugar/verbs", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ infinitives }),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to create verbs");
-  }
-  return res.json();
-}
-
-// ── Generate packs ──
+// ── Generate packs for existing verbs (add another tense) ──
 export async function generatePacks(verbIds, tense) {
   const headers = await authHeaders();
   const res = await fetch("/api/conjugar/generate", {
@@ -90,8 +77,27 @@ export async function generatePacks(verbIds, tense) {
     throw new Error(err.error || "Failed to generate packs");
   }
   const json = await res.json();
-  // Cache freshly generated packs so they're immediately available offline.
   if (json.packs) cacheDrillPacks(json.packs).catch(() => {});
+  return json;
+}
+
+// ── Atomic: create verbs AND generate packs in a single call.
+// Returns { created: [{infinitive, verb, pack, skipped?}], failed: [{infinitive, error}] }.
+// Verbs only land in the DB when AI generation succeeds — no orphans.
+export async function generateVerbsWithPacks(infinitives, tense) {
+  const headers = await authHeaders();
+  const res = await fetch("/api/conjugar/generate-batch", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ infinitives, tense }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to generate exercises");
+  }
+  const json = await res.json();
+  const packs = (json.created || []).map((c) => c.pack).filter(Boolean);
+  if (packs.length > 0) cacheDrillPacks(packs).catch(() => {});
   return json;
 }
 
@@ -160,19 +166,44 @@ export async function regeneratePack(packId) {
   return json;
 }
 
-// ── Save attempt ──
+// ── Save attempt (network-first, queue on offline) ──
 export async function saveAttempt(data) {
-  const headers = await authHeaders();
-  const res = await fetch("/api/conjugar/attempts", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to save attempt");
+  try {
+    const headers = await authHeaders();
+    const res = await fetch("/api/conjugar/attempts", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to save attempt");
+    }
+    return res.json();
+  } catch (e) {
+    // Network failure — queue a direct Supabase insert for later sync.
+    // RLS on drill_attempts requires user_id = auth.uid(); read user_id from cached session.
+    const session = getCachedSession();
+    const userId = session?.user?.id;
+    if (!userId) throw e;
+
+    const percentage = Math.round((data.score / data.total) * 100);
+    const grade = calculateGrade(percentage);
+    enqueue({
+      table: "drill_attempts",
+      method: "insert",
+      payload: {
+        user_id: userId,
+        pack_ids: data.packIds,
+        score: data.score,
+        total: data.total,
+        percentage,
+        grade,
+        details: data.details,
+      },
+    });
+    return { queued: true };
   }
-  return res.json();
 }
 
 // ── Hook for a single pack detail (network-first, cache fallback) ──

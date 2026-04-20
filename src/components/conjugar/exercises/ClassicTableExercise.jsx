@@ -1,10 +1,9 @@
 import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PERSONS } from "@/lib/conjugar/constants";
-import { getExerciseMeta } from "../shared";
+import ExerciseHeader from "../ExerciseHeader";
 
 export default function ClassicTableExercise({ exercise, onAnswer, feedback, answer = {} }) {
-  const meta = getExerciseMeta("classic_table");
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -27,13 +26,11 @@ export default function ClassicTableExercise({ exercise, onAnswer, feedback, ans
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <span className="text-sm font-bold mb-3" style={{ color: meta.color }}>
-        {meta.icon} {meta.label}
-      </span>
-      <h2 className="text-3xl font-black text-gray-900 mb-1">{exercise.verb}</h2>
-      <p className="text-gray-500 text-sm font-semibold mb-6">
-        {exercise.tenseLabel}
-      </p>
+      <ExerciseHeader
+        type="classic_table"
+        verb={exercise._verb || exercise.verb}
+        tense={exercise._tense || exercise.tense}
+      />
 
       <div className="w-full rounded-2xl border border-gray-200 divide-y divide-gray-100">
         {PERSONS.map((person, idx) => {
@@ -56,7 +53,7 @@ export default function ClassicTableExercise({ exercise, onAnswer, feedback, ans
                     "w-full px-3 py-2.5 rounded-xl border text-center text-sm font-semibold outline-none transition-colors",
                     !feedback && "border-gray-200 bg-gray-50 focus:border-green-400 focus:bg-white",
                     fb?.correct && "border-green-400 bg-green-50 text-green-700",
-                    fb && !fb.correct && "border-red-400 bg-red-50 text-red-700"
+                    fb && !fb.correct && "border-red-400 bg-red-50 text-red-700",
                   )}
                 />
                 {fb && !fb.correct && (

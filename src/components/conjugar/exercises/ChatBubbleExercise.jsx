@@ -1,14 +1,19 @@
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getExerciseMeta } from "../shared";
+import Blank from "../Blank";
+import BlankLabel from "../BlankLabel";
+import ExerciseHeader from "../ExerciseHeader";
 
 export default function ChatBubbleExercise({ exercise, onAnswer, feedback, answer = "" }) {
-  const meta = getExerciseMeta("chat_bubble");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!feedback && inputRef.current) inputRef.current.focus();
+  }, [exercise, feedback]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <span className="text-sm font-bold mb-6" style={{ color: meta.color }}>
-        {meta.icon} {meta.label}
-      </span>
+      <ExerciseHeader type="chat_bubble" verb={exercise._verb} tense={exercise._tense} />
 
       <div className="w-full flex flex-col gap-3">
         {exercise.messages.map((msg, i) => {
@@ -21,11 +26,10 @@ export default function ChatBubbleExercise({ exercise, onAnswer, feedback, answe
                   "max-w-[80%] px-4 py-3 rounded-2xl text-base font-medium",
                   msg.isUser
                     ? "bg-green-50 border border-green-200 text-gray-800 rounded-br-md"
-                    : "bg-gray-100 text-gray-800 rounded-bl-md"
+                    : "bg-gray-100 text-gray-800 rounded-bl-md",
                 )}
               >
                 {(() => {
-                  // Build full text from whichever fields the AI populated
                   const fullText = hasBlank
                     ? `${msg.blankPosition.before}___${msg.blankPosition.after}`
                     : msg.text || "";
@@ -34,29 +38,21 @@ export default function ChatBubbleExercise({ exercise, onAnswer, feedback, answe
                   if (blankParts.length < 2) return fullText;
 
                   return (
-                    <span className="leading-relaxed">
-                      {blankParts[0]}
-                      <span className="inline-flex flex-col items-center mx-1">
-                        <input
-                          type="text"
+                    <span className="leading-relaxed inline-flex flex-wrap items-baseline">
+                      <span>{blankParts[0]}</span>
+                      <span className="inline-flex flex-col items-center">
+                        <Blank
+                          ref={inputRef}
                           value={answer}
                           onChange={(e) => onAnswer(e.target.value)}
-                          disabled={!!feedback}
-                          className={cn(
-                            "w-24 text-center font-bold border-b-2 outline-none bg-transparent",
-                            !feedback && "border-green-400",
-                            feedback?.correct && "border-green-500 text-green-700",
-                            feedback && !feedback.correct && "border-red-500 text-red-700"
-                          )}
-                          placeholder="___"
+                          feedback={feedback}
+                          expected={feedback?.expected}
+                          widthClass="w-24"
+                          textClass="text-base font-bold"
                         />
-                        {feedback && !feedback.correct && (
-                          <span className="text-xs font-semibold text-green-600 mt-0.5">
-                            {feedback.expected}
-                          </span>
-                        )}
+                        <BlankLabel person={exercise.person} tense={exercise._tense} />
                       </span>
-                      {blankParts.slice(1).join("___")}
+                      <span>{blankParts.slice(1).join("___")}</span>
                     </span>
                   );
                 })()}

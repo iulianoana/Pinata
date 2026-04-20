@@ -2,28 +2,13 @@ import { useState, useEffect } from "react";
 import { C } from "../../styles/theme";
 import { SPANISH_TENSES } from "../../lib/conjugar/constants";
 import { detectVerbType } from "../../lib/conjugar/constants";
-import { createVerbs, generatePacks } from "../../lib/conjugar/api";
+import { generateVerbsWithPacks } from "../../lib/conjugar/api";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../ui/dialog";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "../ui/sheet";
-
-const TENSE_EXAMPLES = {
-  presente: "yo hablo",
-  preterito_indefinido: "yo hablé",
-  preterito_imperfecto: "yo hablaba",
-  preterito_perfecto: "yo he hablado",
-  preterito_pluscuamperfecto: "yo había hablado",
-  futuro_simple: "yo hablaré",
-  futuro_perfecto: "yo habré hablado",
-  condicional_simple: "yo hablaría",
-  condicional_compuesto: "yo habría hablado",
-  subjuntivo_presente: "que yo hable",
-  subjuntivo_imperfecto: "que yo hablara",
-  imperativo: "¡habla tú!",
-};
 
 const PROGRESS_STEPS = [
   "Analizando verbos...",
@@ -32,22 +17,25 @@ const PROGRESS_STEPS = [
   "Casi listo...",
 ];
 
-export default function AddVerbModal({ open, onClose, onSuccess }) {
+export default function AddVerbModal({ open, onClose, onSuccess, onVerbsChanged }) {
   const [verbInput, setVerbInput] = useState("");
   const [tense, setTense] = useState("presente");
   const [errors, setErrors] = useState([]);
+  const [failedVerbs, setFailedVerbs] = useState([]); // [{infinitive, error}]
   const [generating, setGenerating] = useState(false);
   const [progressStep, setProgressStep] = useState(0);
   const [progressVerbs, setProgressVerbs] = useState([]);
+  const [completedVerbs, setCompletedVerbs] = useState({}); // {infinitive: "ok"|"fail"}
 
-  // Reset state when opened
   useEffect(() => {
     if (open) {
       setVerbInput("");
       setTense("presente");
       setErrors([]);
+      setFailedVerbs([]);
       setGenerating(false);
       setProgressStep(0);
+      setCompletedVerbs({});
     }
   }, [open]);
 
@@ -79,29 +67,41 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
       return;
     }
     setErrors([]);
+    setFailedVerbs([]);
 
     const verbs = parseVerbs();
     setProgressVerbs(verbs);
+    setCompletedVerbs({});
     setGenerating(true);
     setProgressStep(0);
 
-    // Advance progress steps on a timer
     const interval = setInterval(() => {
       setProgressStep((prev) => Math.min(prev + 1, PROGRESS_STEPS.length - 1));
     }, 3000);
 
     try {
-      // Step 1: Create/find verbs
-      const { verbs: createdVerbs } = await createVerbs(verbs);
-      setProgressStep(1);
-
-      // Step 2: Generate packs
-      const verbIds = createdVerbs.map((v) => v.id);
-      await generatePacks(verbIds, tense);
+      const { created = [], failed = [] } = await generateVerbsWithPacks(verbs, tense);
       setProgressStep(PROGRESS_STEPS.length - 1);
-
       clearInterval(interval);
-      onSuccess();
+
+      const marks = {};
+      for (const c of created) marks[c.infinitive] = "ok";
+      for (const f of failed) marks[f.infinitive] = "fail";
+      setCompletedVerbs(marks);
+
+      if (failed.length === 0) {
+        onSuccess();
+        return;
+      }
+
+      // Stay open — show per-verb failures, keep input so user can edit and retry.
+      // Refresh the background verb list so successfully created verbs show up behind the modal.
+      if (created.length > 0) onVerbsChanged?.();
+      setFailedVerbs(failed);
+      // Prune successfully generated verbs from the input so retry only re-tries failures.
+      const remaining = failed.map((f) => f.infinitive).join(", ");
+      setVerbInput(remaining);
+      setGenerating(false);
     } catch (e) {
       clearInterval(interval);
       setGenerating(false);
@@ -119,7 +119,7 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
       : null;
 
   const content = generating ? (
-    <GeneratingState step={progressStep} verbs={progressVerbs} />
+    <GeneratingState step={progressStep} verbs={progressVerbs} completed={completedVerbs} />
   ) : (
     <FormContent
       verbInput={verbInput}
@@ -127,6 +127,7 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
       tense={tense}
       setTense={setTense}
       errors={errors}
+      failedVerbs={failedVerbs}
       isValid={isValid}
       disabledReason={disabledReason}
       onGenerate={handleGenerate}
@@ -134,7 +135,6 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
     />
   );
 
-  // Use isMobile to determine which wrapper
   const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
 
   if (isMobile) {
@@ -181,11 +181,9 @@ export default function AddVerbModal({ open, onClose, onSuccess }) {
   );
 }
 
-// ── Form content ──
-function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid, disabledReason, onGenerate, onClose }) {
+function FormContent({ verbInput, setVerbInput, tense, setTense, errors, failedVerbs, isValid, disabledReason, onGenerate, onClose }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Verb input */}
       <div>
         <label style={{
           display: "block", fontSize: 14, fontWeight: 700, color: C.text,
@@ -212,7 +210,6 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
         </p>
       </div>
 
-      {/* Tense selector */}
       <div>
         <label style={{
           display: "block", fontSize: 14, fontWeight: 700, color: C.text,
@@ -243,7 +240,6 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
         </div>
       </div>
 
-      {/* Info box */}
       <div style={{
         padding: "14px 16px", borderRadius: 12,
         background: "#ECFDF5", border: "1px solid #A7F3D0",
@@ -256,7 +252,24 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
         </p>
       </div>
 
-      {/* Errors */}
+      {failedVerbs.length > 0 && (
+        <div style={{
+          padding: "12px 14px", borderRadius: 10,
+          background: "#FEF2F2", border: "1px solid #FECACA",
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 800, color: "#991B1B", marginBottom: 6 }}>
+            {failedVerbs.length} verbo{failedVerbs.length !== 1 ? "s" : ""} no se {failedVerbs.length !== 1 ? "generaron" : "generó"}:
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+            {failedVerbs.map((f, i) => (
+              <li key={i} style={{ fontSize: 13, fontWeight: 600, color: "#DC2626" }}>
+                <strong>{f.infinitive}</strong> — {f.error}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {errors.length > 0 && (
         <div style={{
           padding: "10px 14px", borderRadius: 10,
@@ -268,7 +281,6 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
         </div>
       )}
 
-      {/* Buttons */}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <button
           onClick={onClose}
@@ -296,7 +308,7 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
               fontFamily: "'Nunito', sans-serif",
             }}
           >
-            {"\u2726"} Generar con IA
+            {"\u2726"} {failedVerbs.length > 0 ? "Reintentar" : "Generar con IA"}
           </button>
         </div>
       </div>
@@ -304,8 +316,7 @@ function FormContent({ verbInput, setVerbInput, tense, setTense, errors, isValid
   );
 }
 
-// ── Generating state ──
-function GeneratingState({ step, verbs }) {
+function GeneratingState({ step, verbs, completed }) {
   const progress = ((step + 1) / PROGRESS_STEPS.length) * 100;
 
   return (
@@ -313,7 +324,6 @@ function GeneratingState({ step, verbs }) {
       display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "center", padding: "40px 20px", gap: 20, minHeight: 300,
     }}>
-      {/* Spinner */}
       <div style={{
         width: 56, height: 56, borderRadius: "50%",
         border: `4px solid ${C.border}`, borderTopColor: C.accent,
@@ -328,7 +338,6 @@ function GeneratingState({ step, verbs }) {
         {PROGRESS_STEPS[step]}
       </p>
 
-      {/* Progress bar */}
       <div style={{
         width: "100%", maxWidth: 300, height: 6, borderRadius: 3,
         background: "#E5E7EB", overflow: "hidden",
@@ -339,19 +348,24 @@ function GeneratingState({ step, verbs }) {
         }} />
       </div>
 
-      {/* Verb pills */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-        {verbs.map((v, i) => (
-          <span key={i} style={{
-            padding: "4px 12px", borderRadius: 16,
-            background: i <= step ? "#ECFDF5" : "#F3F4F6",
-            color: i <= step ? "#059669" : C.muted,
-            fontSize: 13, fontWeight: 700, fontFamily: "'Nunito', sans-serif",
-            border: `1px solid ${i <= step ? "#A7F3D0" : "#E5E7EB"}`,
-          }}>
-            {v}
-          </span>
-        ))}
+        {verbs.map((v, i) => {
+          const state = completed?.[v];
+          const bg = state === "fail" ? "#FEF2F2" : state === "ok" ? "#ECFDF5" : "#F3F4F6";
+          const color = state === "fail" ? "#DC2626" : state === "ok" ? "#059669" : C.muted;
+          const border = state === "fail" ? "#FECACA" : state === "ok" ? "#A7F3D0" : "#E5E7EB";
+          const suffix = state === "fail" ? " ✗" : state === "ok" ? " ✓" : "";
+          return (
+            <span key={i} style={{
+              padding: "4px 12px", borderRadius: 16,
+              background: bg, color,
+              fontSize: 13, fontWeight: 700, fontFamily: "'Nunito', sans-serif",
+              border: `1px solid ${border}`,
+            }}>
+              {v}{suffix}
+            </span>
+          );
+        })}
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

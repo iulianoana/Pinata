@@ -1,21 +1,17 @@
 import { cn } from "@/lib/utils";
-import { getExerciseMeta } from "../shared";
+import ExerciseHeader from "../ExerciseHeader";
+import { SPANISH_TENSES } from "@/lib/conjugar/constants";
 
 export default function OddOneOutExercise({ exercise, onAnswer, feedback, answer }) {
-  const meta = getExerciseMeta("odd_one_out");
   const selected = answer ?? null;
+  const tenseLabel = SPANISH_TENSES.find((t) => t.id === exercise._tense)?.label || exercise.tenseLabel;
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <span className="text-sm font-bold mb-3" style={{ color: meta.color }}>
-        {meta.icon} {meta.label}
-      </span>
+      <ExerciseHeader type="odd_one_out" verb={exercise._verb || exercise.verb} tense={exercise._tense} />
 
-      <p className="text-xl font-bold text-gray-800 text-center mb-1">
-        ¿Cuál NO pertenece al {exercise.tenseLabel?.toLowerCase()}?
-      </p>
-      <p className="text-sm text-gray-400 font-semibold mb-8">
-        {exercise.verb} · {exercise.tenseLabel}
+      <p className="text-xl font-bold text-gray-800 text-center mb-8">
+        ¿Cuál NO pertenece al {tenseLabel?.toLowerCase()}?
       </p>
 
       <div className="grid grid-cols-2 gap-3 w-full">
@@ -36,7 +32,7 @@ export default function OddOneOutExercise({ exercise, onAnswer, feedback, answer
                 !feedback && isSelected && "border-blue-400 bg-blue-50 text-blue-700",
                 isOdd && "border-red-400 bg-red-50 text-red-500 line-through",
                 correctPick && "border-green-500 bg-green-50 text-green-700 no-underline",
-                wasWrong && "border-red-300 bg-red-50 text-red-400"
+                wasWrong && "border-red-300 bg-red-50 text-red-400",
               )}
             >
               {opt}

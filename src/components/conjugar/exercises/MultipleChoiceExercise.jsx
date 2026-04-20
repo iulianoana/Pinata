@@ -1,21 +1,34 @@
 import { cn } from "@/lib/utils";
-import { getExerciseMeta } from "../shared";
+import Blank from "../Blank";
+import ExerciseHeader from "../ExerciseHeader";
 
 export default function MultipleChoiceExercise({ exercise, onAnswer, feedback, answer }) {
-  const meta = getExerciseMeta("multiple_choice");
   const selected = answer ?? null;
+  const parts = exercise.sentence.split("___");
+
+  const blankValue = selected !== null ? exercise.options[selected] : "";
+  const blankFeedback = feedback
+    ? { correct: selected === exercise.correctIndex }
+    : null;
+  const expected =
+    feedback && selected !== exercise.correctIndex
+      ? exercise.options[exercise.correctIndex]
+      : undefined;
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <span className="text-sm font-bold mb-4" style={{ color: meta.color }}>
-        {meta.icon} {meta.label}
-      </span>
+      <ExerciseHeader type="multiple_choice" verb={exercise._verb || exercise.verb} tense={exercise._tense} />
 
-      <p className="text-2xl font-bold text-gray-800 text-center mb-2">
-        {exercise.sentence}
-      </p>
-      <p className="text-sm text-gray-400 font-semibold mb-8">
-        {exercise.verb} · {exercise.tenseLabel}
+      <p className="text-2xl font-bold text-gray-800 text-center leading-relaxed flex flex-wrap items-baseline justify-center gap-x-1 mb-8">
+        {parts[0]}
+        <Blank
+          readOnly
+          value={blankValue}
+          feedback={blankFeedback}
+          expected={expected}
+          textClass="text-2xl font-bold"
+        />
+        {parts.slice(1).join("___")}
       </p>
 
       <div className="grid grid-cols-2 gap-3 w-full">
@@ -34,7 +47,7 @@ export default function MultipleChoiceExercise({ exercise, onAnswer, feedback, a
                 !feedback && !isSelected && "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
                 !feedback && isSelected && "border-green-400 bg-green-50 text-green-700",
                 isCorrect && "border-green-500 bg-green-50 text-green-700",
-                wasWrong && "border-red-400 bg-red-50 text-red-600"
+                wasWrong && "border-red-400 bg-red-50 text-red-600",
               )}
             >
               {opt}

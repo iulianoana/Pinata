@@ -93,10 +93,6 @@ export const aiResponseSchema = z.object({
 // Request validation schemas
 // ---------------------------------------------------------------------------
 
-export const createVerbsSchema = z.object({
-  infinitives: z.array(z.string().trim().min(1)).min(1).max(20),
-});
-
 export const generatePacksSchema = z.object({
   verbIds: z.array(z.string().uuid()).min(1),
   tense: z.enum(TENSE_IDS),
