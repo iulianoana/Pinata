@@ -13,7 +13,7 @@ export default function ChatBubbleExercise({ exercise, onAnswer, feedback, answe
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <ExerciseHeader type="chat_bubble" verb={exercise._verb} tense={exercise._tense} />
+      <ExerciseHeader type="chat_bubble" verb={exercise._verb} tense={exercise._tense} person={exercise.person} />
 
       <div className="w-full flex flex-col gap-3">
         {exercise.messages.map((msg, i) => {

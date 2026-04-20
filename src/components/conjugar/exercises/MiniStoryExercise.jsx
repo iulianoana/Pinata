@@ -31,7 +31,7 @@ export default function MiniStoryExercise({ exercise, onAnswer, feedback, answer
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <ExerciseHeader type="mini_story" verb={exercise._verb} tense={exercise._tense} />
+      <ExerciseHeader type="mini_story" verb={exercise._verb} tense={exercise._tense} person={exercise.person} />
 
       <div className="w-full rounded-2xl border border-gray-200 bg-white p-5">
         <p className="text-xl font-semibold text-gray-800 leading-relaxed">

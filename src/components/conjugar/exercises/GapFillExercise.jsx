@@ -13,7 +13,7 @@ export default function GapFillExercise({ exercise, onAnswer, feedback, answer =
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <ExerciseHeader type="gap_fill" verb={exercise._verb} tense={exercise._tense} />
+      <ExerciseHeader type="gap_fill" verb={exercise._verb} tense={exercise._tense} person={exercise.person} />
 
       <p className="text-2xl font-bold text-gray-800 text-center leading-relaxed flex flex-wrap items-baseline justify-center gap-x-1">
         {parts[0]}

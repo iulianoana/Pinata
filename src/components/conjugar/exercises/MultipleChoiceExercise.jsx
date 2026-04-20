@@ -17,7 +17,7 @@ export default function MultipleChoiceExercise({ exercise, onAnswer, feedback, a
 
   return (
     <div className="flex flex-col items-center w-full max-w-lg mx-auto">
-      <ExerciseHeader type="multiple_choice" verb={exercise._verb || exercise.verb} tense={exercise._tense} />
+      <ExerciseHeader type="multiple_choice" verb={exercise._verb || exercise.verb} tense={exercise._tense} person={exercise.person} />
 
       <p className="text-2xl font-bold text-gray-800 text-center leading-relaxed flex flex-wrap items-baseline justify-center gap-x-1 mb-8">
         {parts[0]}
