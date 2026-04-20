@@ -6,6 +6,8 @@ import { prefetchAll, cacheQuizData } from "../lib/offline-cache";
 import { cachePdf } from "../lib/pdf-cache";
 import { fetchWeeks, fetchLessons, fetchQuizzes, fetchQuizData, getLessonPdfUrl } from "../lib/api";
 import { fetchVerbs, fetchPacksByIds } from "../lib/conjugar/api";
+import { fetchVocabulary } from "../useVocabulary";
+import { flush, usePendingCount, useLastFlushError, clearPending } from "../lib/syncQueue";
 import { relativeTime } from "../utils/helpers";
 
 
@@ -161,6 +163,10 @@ export default function StorageScreen({ session }) {
   const [error, setError] = useState(null);
   const initialOpenDone = useRef(false);
 
+  // Live pending-writes queue (separate from the download cache).
+  const pendingCount = usePendingCount();
+  const lastFlushError = useLastFlushError();
+
   const loadStatus = useCallback(async () => {
     try {
       const s = await getOfflineStatus();
@@ -191,11 +197,15 @@ export default function StorageScreen({ session }) {
 
   const handleSync = async () => {
     setSyncing(true);
-    setSyncProgress({ phase: "metadata", current: 0, total: 1 });
+    setSyncProgress({ phase: "uploading", current: 0, total: 1 });
     try {
+      // Push any queued writes first so the badge clears before we download.
+      await flush();
+      setSyncProgress({ phase: "metadata", current: 0, total: 1 });
       await prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes, {
         fetchVerbsFn: fetchVerbs,
         fetchPacksByIdsFn: fetchPacksByIds,
+        fetchVocabularyFn: fetchVocabulary,
         onProgress: (phase, current, total) => {
           setSyncProgress({ phase, current, total });
         },
@@ -204,6 +214,12 @@ export default function StorageScreen({ session }) {
     setSyncing(false);
     setSyncProgress(null);
     await loadStatus();
+  };
+
+  const handleClearPending = () => {
+    if (window.confirm("Discard pending writes that keep failing? They won't reach the server.")) {
+      clearPending();
+    }
   };
 
   const handleDownloadQuiz = async (quizId) => {
@@ -242,6 +258,7 @@ export default function StorageScreen({ session }) {
     : 0;
 
   const phaseLabels = {
+    uploading: "Uploading pending changes...",
     metadata: "Fetching course data...",
     quizzes: "Downloading quizzes...",
     lessons: "Downloading lessons...",
@@ -549,18 +566,38 @@ export default function StorageScreen({ session }) {
         {/* Pending sync */}
         <div style={{
           background: C.card, borderRadius: 16, margin: "0 16px 12px",
-          border: `1.5px solid ${C.border}`, padding: "14px 16px",
+          border: `1.5px solid ${lastFlushError && pendingCount > 0 ? C.error : C.border}`,
+          padding: "14px 16px",
           display: "flex", alignItems: "center", gap: 12,
         }}>
           <LoaderIcon />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Pending sync</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>
-              {status?.pendingSyncCount > 0
-                ? `${status.pendingSyncCount} item${status.pendingSyncCount !== 1 ? "s" : ""} waiting`
+              {pendingCount > 0
+                ? `${pendingCount} item${pendingCount !== 1 ? "s" : ""} waiting`
                 : "All synced"}
             </div>
+            {pendingCount > 0 && lastFlushError && (
+              <div style={{
+                fontSize: 10, fontWeight: 600, color: C.error,
+                marginTop: 4, wordBreak: "break-word",
+              }}>
+                Last error: {lastFlushError.message}
+              </div>
+            )}
           </div>
+          {pendingCount > 0 && lastFlushError && (
+            <button
+              onClick={handleClearPending}
+              style={{
+                background: C.errorLight, color: C.error,
+                border: "none", borderRadius: 8,
+                padding: "6px 10px", fontSize: 10, fontWeight: 800,
+                cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+              }}
+            >Discard</button>
+          )}
         </div>
 
         {/* Sync button */}

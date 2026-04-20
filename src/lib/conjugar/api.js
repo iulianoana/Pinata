@@ -182,20 +182,33 @@ export async function regeneratePack(packId) {
 
 // ── Save attempt (network-first, queue on offline) ──
 export async function saveAttempt(data) {
+  let networkFailure = false;
   try {
     const headers = await authHeaders();
-    const res = await fetch("/api/conjugar/attempts", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(data),
-    });
+    let res;
+    try {
+      res = await fetch("/api/conjugar/attempts", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+      });
+    } catch (fetchErr) {
+      // fetch() only rejects on network failure (offline, DNS, CORS, abort).
+      // HTTP status errors come back as a resolved Response with ok=false.
+      networkFailure = true;
+      throw fetchErr;
+    }
     if (!res.ok) {
+      // Server responded but rejected the write. Don't queue — a direct Supabase
+      // insert will almost certainly fail the same way and ghost in the queue.
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to save attempt");
+      throw new Error(err.error || `Failed to save attempt (HTTP ${res.status})`);
     }
     return res.json();
   } catch (e) {
-    // Network failure — queue a direct Supabase insert for later sync.
+    if (!networkFailure) throw e;
+
+    // True network failure — queue a direct Supabase insert for later sync.
     // RLS on drill_attempts requires user_id = auth.uid(); read user_id from cached session.
     const session = getCachedSession();
     const userId = session?.user?.id;

@@ -76,18 +76,56 @@ export default function App() {
     return () => { cancelled = true; subscription.unsubscribe(); };
   }, []);
 
-  // Sync queue + deferred offline prefetch
+  // Sync queue + background offline prefetch.
+  // Fires automatically on: mount, back-online, and tab-visible (throttled).
+  // No user interaction required — if anything is stale, we grab it.
   useEffect(() => {
-    flush();
-    const deferPrefetch = () => setTimeout(() => prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes, {
-      fetchVerbsFn: fetchVerbs,
-      fetchPacksByIdsFn: fetchPacksByIds,
-      fetchVocabularyFn: fetchVocabulary,
-    }), 5000);
-    if (navigator.onLine) deferPrefetch();
-    const handleOnline = () => { flush(); deferPrefetch(); };
+    const MIN_PREFETCH_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes between auto-syncs
+    let prefetchInFlight = false;
+    let lastPrefetchAt = 0;
+    let prefetchTimer = null;
+
+    const runPrefetch = () => {
+      if (prefetchInFlight) return;
+      if (!navigator.onLine) return;
+      const now = Date.now();
+      if (now - lastPrefetchAt < MIN_PREFETCH_INTERVAL_MS) return;
+      prefetchInFlight = true;
+      prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes, {
+        fetchVerbsFn: fetchVerbs,
+        fetchPacksByIdsFn: fetchPacksByIds,
+        fetchVocabularyFn: fetchVocabulary,
+      })
+        .catch(() => {})
+        .finally(() => {
+          prefetchInFlight = false;
+          lastPrefetchAt = Date.now();
+        });
+    };
+
+    // Initial tick — flush queued writes, then kick off a background cache fill.
+    // Short defer so we don't contend with the first paint.
+    flush().catch(() => {});
+    prefetchTimer = setTimeout(runPrefetch, 800);
+
+    const handleOnline = () => {
+      flush().catch(() => {});
+      runPrefetch();
+    };
+    const handleVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      flush().catch(() => {});
+      runPrefetch();
+    };
+
     window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisible);
+
+    return () => {
+      clearTimeout(prefetchTimer);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisible);
+    };
   }, []);
 
   if (session === undefined) {
