@@ -102,6 +102,7 @@ export default {
       },
       fontFamily: {
         nunito: ["'Nunito'", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        inter: ["'Inter'", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
       },
       maxWidth: {
         app: "520px",
@@ -140,6 +141,18 @@ export default {
           "50%": {
             boxShadow: "0 0 20px rgba(0,180,160,0.18), 0 4px 12px rgba(0,60,50,0.08)",
           },
+        },
+        correctingGlow: {
+          "0%, 100%": {
+            boxShadow: "0 0 0 1px rgba(16,185,129,0.35), 0 0 24px 2px rgba(16,185,129,0.18), inset 0 0 0 1px rgba(16,185,129,0.08)",
+          },
+          "50%": {
+            boxShadow: "0 0 0 2px rgba(16,185,129,0.55), 0 0 48px 8px rgba(16,185,129,0.35), inset 0 0 0 1px rgba(16,185,129,0.15)",
+          },
+        },
+        scanSweep: {
+          "0%":   { left: "2%" },
+          "100%": { left: "98%" },
         },
         confettiDrop: {
           "0%": { transform: "translateY(-10vh) rotate(0deg)", opacity: "1" },
@@ -192,6 +205,8 @@ export default {
         "score-anim": "countUp 0.6s 0.5s ease-out both",
         shimmer: "shimmer 1.8s infinite ease-in-out",
         "skeleton-glow": "skeletonGlow 2s infinite ease-in-out",
+        "correcting-glow": "correctingGlow 2.2s infinite ease-in-out",
+        "scan-sweep": "scanSweep 3.4s infinite ease-in-out alternate",
         "confetti-drop": "confettiDrop var(--confetti-dur, 3s) var(--confetti-delay, 0s) ease-in forwards",
         "sheet-up": "sheetUp 0.3s ease-out",
         "overlay-fade": "overlayFade 0.2s ease-out",

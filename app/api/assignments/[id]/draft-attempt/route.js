@@ -10,8 +10,12 @@ function getSupabase(req) {
   );
 }
 
-// Idempotent: returns the latest open draft attempt for the assignment,
-// creating v1 if none exist. RLS enforces that the bearer owns the assignment.
+// Single-attempt model: one Attempt per Assignment.
+//   - If an attempt exists, return it (regardless of submitted_at) along with
+//     its correction, if any. View state on the client is derived from
+//     `submitted_at` and `correction`.
+//   - If no attempt exists, create v1 and return it.
+// RLS enforces that the bearer owns the assignment.
 export async function POST(req, { params }) {
   const supabase = getSupabase(req);
   if (!supabase) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +25,6 @@ export async function POST(req, { params }) {
 
   const { id: assignmentId } = await params;
 
-  // Verify the assignment exists + is owned by this user (RLS handles the latter).
   const { data: assignment, error: assignErr } = await supabase
     .from("assignments")
     .select("id")
@@ -41,16 +44,20 @@ export async function POST(req, { params }) {
   if (queryErr) return Response.json({ error: queryErr.message }, { status: 500 });
 
   const latest = existing?.[0];
-  if (latest && latest.submitted_at === null) {
-    return Response.json(latest);
+  if (latest) {
+    const { data: correction } = await supabase
+      .from("corrections")
+      .select("id, segments, summary, score_grammar, score_vocabulary, score_structure, created_at")
+      .eq("attempt_id", latest.id)
+      .maybeSingle();
+    return Response.json({ ...latest, correction: correction || null });
   }
 
-  const nextVersion = latest ? latest.version_number + 1 : 1;
   const { data: created, error: insertErr } = await supabase
     .from("attempts")
     .insert({
       assignment_id: assignmentId,
-      version_number: nextVersion,
+      version_number: 1,
       essay: "",
       word_count: 0,
     })
@@ -58,5 +65,5 @@ export async function POST(req, { params }) {
     .single();
 
   if (insertErr) return Response.json({ error: insertErr.message }, { status: 500 });
-  return Response.json(created);
+  return Response.json({ ...created, correction: null });
 }

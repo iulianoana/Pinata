@@ -378,6 +378,8 @@ export async function regenerateAssignment(assignmentId) {
   return updated;
 }
 
+// Returns { id, version_number, essay, word_count, submitted_at, correction }
+// where `correction` is either the saved correction row or null.
 export async function fetchOrCreateDraftAttempt(assignmentId) {
   const headers = await authHeaders();
   const res = await fetch(`/api/assignments/${assignmentId}/draft-attempt`, {
@@ -387,6 +389,22 @@ export async function fetchOrCreateDraftAttempt(assignmentId) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Failed to load attempt");
+  }
+  return res.json();
+}
+
+// Idempotent. Returns { attempt, correction }. Safe to call on reload —
+// if a correction already exists, the server short-circuits and returns it
+// without calling the LLM again.
+export async function correctAttempt(attemptId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/attempts/${attemptId}/correct`, {
+    method: "POST",
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to correct attempt");
   }
   return res.json();
 }

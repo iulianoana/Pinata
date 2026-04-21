@@ -30,6 +30,21 @@ export async function PATCH(req, { params }) {
   const essay = body.essay;
   const word_count = countWords(essay);
 
+  // Reject edits to a submitted attempt. Once a correction is requested, the
+  // essay is frozen — the submit endpoint sets submitted_at atomically.
+  const { data: existing, error: fetchErr } = await supabase
+    .from("attempts")
+    .select("id, submitted_at")
+    .eq("id", id)
+    .single();
+  if (fetchErr) {
+    if (fetchErr.code === "PGRST116") return Response.json({ error: "Attempt not found" }, { status: 404 });
+    return Response.json({ error: fetchErr.message }, { status: 500 });
+  }
+  if (existing.submitted_at) {
+    return Response.json({ error: "Attempt already submitted" }, { status: 409 });
+  }
+
   const { data, error } = await supabase
     .from("attempts")
     .update({ essay, word_count, updated_at: new Date().toISOString() })

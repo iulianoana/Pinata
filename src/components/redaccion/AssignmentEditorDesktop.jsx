@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Check, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Check, Pencil, Sparkles } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../ui/dialog";
@@ -10,16 +10,24 @@ import BriefView from "./BriefView";
 import EssayEditor from "./EssayEditor";
 import WordCount from "./WordCount";
 import SaveIndicator from "./SaveIndicator";
+import CorrectionReview from "./CorrectionReview";
+import CorrectingOverlay from "./CorrectingOverlay";
 import { useEssayAutosave } from "../../lib/redaccion/use-essay-autosave";
 import { countWords } from "../../lib/redaccion/word-count";
 
 export default function AssignmentEditorDesktop({
   assignment,
   attempt,
+  correction,
+  view,
+  correcting,
+  correctionError,
   onBack,
   onDelete,
   onRegenerate,
   regenerating,
+  onCorrect,
+  onRetryCorrect,
 }) {
   const brief = assignment.brief || {};
   const min = brief.extensionMin ?? 0;
@@ -29,6 +37,9 @@ export default function AssignmentEditorDesktop({
   const [essay, setEssay] = useState(attempt.essay || "");
   const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
 
+  // Autosave idles in non-editor views — value won't change (textarea readOnly),
+  // and the hook short-circuits when value === lastSavedValue. Still mounted so
+  // it reattaches cleanly if the user ever goes back to editor mode.
   const { status, flushNow, retry } = useEssayAutosave({
     attemptId: attempt.id,
     value: essay,
@@ -36,7 +47,7 @@ export default function AssignmentEditorDesktop({
   });
 
   const wordCount = countWords(essay);
-  const canCorrect = wordCount >= correctThreshold;
+  const canCorrect = view === "editor" && wordCount >= correctThreshold && !correcting;
 
   const handleRegenClick = () => {
     if (essay.trim().length > 0) {
@@ -70,16 +81,17 @@ export default function AssignmentEditorDesktop({
             {assignment.title}
           </div>
         </div>
-        {/* Empty stepper slot — Session 4 fills this when v2 becomes possible. */}
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={onDelete}
-          className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#4B5563] text-sm font-bold hover:bg-[#F9FAFB] flex items-center gap-1.5 transition-colors"
-        >
-          <Trash2 size={14} strokeWidth={2.2} />
-          Eliminar
-        </button>
+        {view !== "review" && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#4B5563] text-sm font-bold hover:bg-[#F9FAFB] flex items-center gap-1.5 transition-colors"
+          >
+            <Trash2 size={14} strokeWidth={2.2} />
+            Eliminar
+          </button>
+        )}
       </div>
 
       {/* 40 / 60 split */}
@@ -88,38 +100,69 @@ export default function AssignmentEditorDesktop({
         <div className="border-r border-[#E5E7EB] bg-[#FAFAF7] flex flex-col min-h-0">
           <div className="overflow-auto px-7 py-6 flex-1">
             <BriefView brief={brief} />
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={handleRegenClick}
-                disabled={regenerating}
-                className="text-[#6B7280] hover:text-[#0F1720] text-sm font-bold flex items-center gap-1.5 disabled:opacity-50 transition-colors"
-              >
-                <RefreshCw size={13} strokeWidth={2.4} className={regenerating ? "animate-spin" : ""} />
-                {regenerating ? "Generando…" : "Regenerar tema"}
-              </button>
-            </div>
+            {view === "editor" && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleRegenClick}
+                  disabled={regenerating}
+                  className="text-[#6B7280] hover:text-[#0F1720] text-sm font-bold flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw size={13} strokeWidth={2.4} className={regenerating ? "animate-spin" : ""} />
+                  {regenerating ? "Generando…" : "Regenerar tema"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Editor — right 60% */}
+        {/* Right column — editor or review */}
         <div className="flex flex-col min-h-0 bg-white">
-          <div className="flex-1 overflow-auto px-8 pt-6 pb-3 min-h-0">
-            <EssayEditor
-              value={essay}
-              onChange={setEssay}
-              onBlur={flushNow}
-              autoFocus
-            />
-          </div>
+          {view === "review" ? (
+            <CorrectionReview correction={correction} onBack={onBack} variant="desktop" />
+          ) : (
+            <>
+              <div
+                className={`flex-1 min-h-0 px-8 pt-6 pb-3 ${
+                  view === "correcting" ? "overflow-visible" : "overflow-auto"
+                }`}
+              >
+                {view === "correcting" ? (
+                  <CorrectingOverlay error={correctionError} onRetry={onRetryCorrect}>
+                    <EssayEditor
+                      value={essay}
+                      onChange={setEssay}
+                      onBlur={flushNow}
+                      autoFocus={false}
+                      readOnly
+                    />
+                  </CorrectingOverlay>
+                ) : (
+                  <EssayEditor
+                    value={essay}
+                    onChange={setEssay}
+                    onBlur={flushNow}
+                    autoFocus={view === "editor"}
+                    readOnly={view !== "editor"}
+                  />
+                )}
+              </div>
 
-          {/* Sticky footer */}
-          <div className="border-t border-[#E5E7EB] px-8 py-3 flex items-center gap-4 bg-white shrink-0">
-            <WordCount value={wordCount} min={min} max={max} />
-            <SaveIndicator status={status} onRetry={retry} />
-            <div className="flex-1" />
-            <CorregirButton disabled={!canCorrect} threshold={correctThreshold} />
-          </div>
+              {/* Sticky footer */}
+              <div className="border-t border-[#E5E7EB] px-8 py-3 flex items-center gap-4 bg-white shrink-0">
+                <WordCount value={wordCount} min={min} max={max} />
+                {view === "editor" && <SaveIndicator status={status} onRetry={retry} />}
+                <div className="flex-1" />
+                <CorregirButton
+                  view={view}
+                  canCorrect={canCorrect}
+                  threshold={correctThreshold}
+                  correcting={correcting}
+                  onClick={onCorrect}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -154,13 +197,27 @@ export default function AssignmentEditorDesktop({
   );
 }
 
-function CorregirButton({ disabled, threshold }) {
+function CorregirButton({ view, canCorrect, threshold, correcting, onClick }) {
+  if (view === "correcting" || correcting) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="h-10 px-5 rounded-lg font-black text-sm flex items-center gap-2 bg-[#D1FAE5] text-[#047857] cursor-not-allowed"
+      >
+        <Sparkles size={14} strokeWidth={2.6} />
+        Corrigiendo…
+      </button>
+    );
+  }
+
   const button = (
     <button
       type="button"
-      disabled={disabled}
+      onClick={canCorrect ? onClick : undefined}
+      disabled={!canCorrect}
       className={`h-10 px-5 rounded-lg font-black text-sm flex items-center gap-2 shadow-sm transition-colors ${
-        disabled
+        !canCorrect
           ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed"
           : "bg-[#10B981] hover:bg-[#059669] text-white shadow-[#10B981]/30"
       }`}
@@ -170,7 +227,7 @@ function CorregirButton({ disabled, threshold }) {
     </button>
   );
 
-  if (!disabled) return button;
+  if (canCorrect) return button;
 
   return (
     <TooltipProvider delayDuration={200}>

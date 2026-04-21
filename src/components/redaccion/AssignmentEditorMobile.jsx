@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ChevronLeft, Trash2, RefreshCw, Check, Pencil, Feather } from "lucide-react";
+import { ChevronLeft, Trash2, RefreshCw, Check, Pencil, Feather, Sparkles } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../ui/dialog";
@@ -10,6 +10,8 @@ import BriefView from "./BriefView";
 import EssayEditor from "./EssayEditor";
 import WordCount from "./WordCount";
 import SaveIndicator from "./SaveIndicator";
+import CorrectionReview from "./CorrectionReview";
+import CorrectingOverlay from "./CorrectingOverlay";
 import { useEssayAutosave } from "../../lib/redaccion/use-essay-autosave";
 import { countWords } from "../../lib/redaccion/word-count";
 
@@ -18,17 +20,23 @@ const SWIPE_THRESHOLD = 50;
 export default function AssignmentEditorMobile({
   assignment,
   attempt,
+  correction,
+  view,
+  correcting,
+  correctionError,
   onBack,
   onDelete,
   onRegenerate,
   regenerating,
+  onCorrect,
+  onRetryCorrect,
 }) {
   const brief = assignment.brief || {};
   const min = brief.extensionMin ?? 0;
   const max = brief.extensionMax ?? 0;
   const correctThreshold = Math.max(1, Math.round(min * 0.7));
 
-  const [view, setView] = useState("tarea"); // "tarea" | "escribir"
+  const [tab, setTab] = useState(view === "correcting" ? "escribir" : "tarea"); // "tarea" | "escribir"
   const [essay, setEssay] = useState(attempt.essay || "");
   const [cursorOffset, setCursorOffset] = useState(null);
   const [scrollTop, setScrollTop] = useState(null);
@@ -45,14 +53,14 @@ export default function AssignmentEditorMobile({
   });
 
   const wordCount = countWords(essay);
-  const canCorrect = wordCount >= correctThreshold;
+  const canCorrect = view === "editor" && wordCount >= correctThreshold && !correcting;
 
   const switchTo = (next) => {
-    if (next === view) return;
-    if (view === "tarea" && briefRef.current) {
+    if (next === tab) return;
+    if (tab === "tarea" && briefRef.current) {
       setBriefScrollTop(briefRef.current.scrollTop);
     }
-    setView(next);
+    setTab(next);
   };
 
   const handleTouchStart = (e) => {
@@ -65,8 +73,8 @@ export default function AssignmentEditorMobile({
     const dx = endX - touchStartX.current;
     touchStartX.current = null;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-    if (dx < 0 && view === "tarea") switchTo("escribir");
-    else if (dx > 0 && view === "escribir") switchTo("tarea");
+    if (dx < 0 && tab === "tarea") switchTo("escribir");
+    else if (dx > 0 && tab === "escribir") switchTo("tarea");
   };
 
   const handleRegenClick = () => {
@@ -81,6 +89,29 @@ export default function AssignmentEditorMobile({
     setConfirmRegenOpen(false);
     onRegenerate();
   };
+
+  // Review mode owns the whole body.
+  if (view === "review") {
+    return (
+      <div className="fixed inset-0 flex flex-col bg-white font-nunito" style={{ zIndex: 30 }}>
+        <div className="h-12 px-4 flex items-center gap-2 border-b border-[#E5E7EB] bg-white shrink-0">
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-9 h-9 -ml-1.5 grid place-items-center text-[#10B981]"
+            aria-label="Volver a la lección"
+          >
+            <ChevronLeft size={22} strokeWidth={2.6} />
+          </button>
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <Pencil size={14} color="#D97706" strokeWidth={2.4} className="shrink-0" />
+            <div className="font-black text-[#0F1720] text-sm truncate">{assignment.title}</div>
+          </div>
+        </div>
+        <CorrectionReview correction={correction} onBack={onBack} variant="mobile" />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex flex-col bg-white font-nunito" style={{ zIndex: 30 }}>
@@ -98,24 +129,26 @@ export default function AssignmentEditorMobile({
           <Pencil size={14} color="#D97706" strokeWidth={2.4} className="shrink-0" />
           <div className="font-black text-[#0F1720] text-sm truncate">{assignment.title}</div>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="w-9 h-9 grid place-items-center text-[#6B7280] hover:text-error"
-          aria-label="Eliminar redacción"
-        >
-          <Trash2 size={18} strokeWidth={2.2} />
-        </button>
+        {view !== "correcting" && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="w-9 h-9 grid place-items-center text-[#6B7280] hover:text-error"
+            aria-label="Eliminar redacción"
+          >
+            <Trash2 size={18} strokeWidth={2.2} />
+          </button>
+        )}
       </div>
 
-      {/* Segmented control — pinned just under the top bar */}
+      {/* Segmented control */}
       <div className="p-3 bg-white border-b border-[#E5E7EB] shrink-0">
         <div className="flex h-10 bg-[#F3F4F6] rounded-xl p-1">
-          <SegBtn active={view === "tarea"} onClick={() => switchTo("tarea")}>
+          <SegBtn active={tab === "tarea"} onClick={() => switchTo("tarea")}>
             <Feather size={14} strokeWidth={2.4} />
             Tarea
           </SegBtn>
-          <SegBtn active={view === "escribir"} onClick={() => switchTo("escribir")}>
+          <SegBtn active={tab === "escribir"} onClick={() => switchTo("escribir")}>
             <Pencil size={14} strokeWidth={2.4} />
             Escribir
           </SegBtn>
@@ -128,16 +161,18 @@ export default function AssignmentEditorMobile({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {view === "tarea" ? (
+        {tab === "tarea" ? (
           <TareaView
             briefRef={briefRef}
             initialScrollTop={briefScrollTop}
             brief={brief}
             onRegenerate={handleRegenClick}
             regenerating={regenerating}
+            allowRegenerate={view === "editor"}
           />
         ) : (
           <EscribirView
+            view={view}
             essay={essay}
             setEssay={setEssay}
             cursorOffset={cursorOffset}
@@ -151,7 +186,11 @@ export default function AssignmentEditorMobile({
             status={status}
             onRetry={retry}
             canCorrect={canCorrect}
+            correcting={correcting}
+            correctionError={correctionError}
             correctThreshold={correctThreshold}
+            onCorrect={onCorrect}
+            onRetryCorrect={onRetryCorrect}
           />
         )}
       </div>
@@ -202,8 +241,7 @@ function SegBtn({ active, onClick, children }) {
   );
 }
 
-function TareaView({ briefRef, initialScrollTop, brief, onRegenerate, regenerating }) {
-  // Restore scroll on mount.
+function TareaView({ briefRef, initialScrollTop, brief, onRegenerate, regenerating, allowRegenerate }) {
   const setRef = (el) => {
     briefRef.current = el;
     if (el && initialScrollTop) el.scrollTop = initialScrollTop;
@@ -211,17 +249,19 @@ function TareaView({ briefRef, initialScrollTop, brief, onRegenerate, regenerati
   return (
     <div ref={setRef} className="flex-1 overflow-auto bg-[#FAFAF7] px-5 py-5">
       <BriefView brief={brief} density="compact" />
-      <div className="mt-6 flex justify-center">
-        <button
-          type="button"
-          onClick={onRegenerate}
-          disabled={regenerating}
-          className="text-[#6B7280] hover:text-[#0F1720] text-sm font-bold flex items-center gap-1.5 disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw size={13} strokeWidth={2.4} className={regenerating ? "animate-spin" : ""} />
-          {regenerating ? "Generando…" : "Regenerar tema"}
-        </button>
-      </div>
+      {allowRegenerate && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={regenerating}
+            className="text-[#6B7280] hover:text-[#0F1720] text-sm font-bold flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={13} strokeWidth={2.4} className={regenerating ? "animate-spin" : ""} />
+            {regenerating ? "Generando…" : "Regenerar tema"}
+          </button>
+        </div>
+      )}
       <div className="pt-6 pb-2 flex justify-center">
         <div className="text-[#9CA3AF] text-[11px] font-bold">
           ← Desliza para escribir
@@ -232,48 +272,90 @@ function TareaView({ briefRef, initialScrollTop, brief, onRegenerate, regenerati
 }
 
 function EscribirView({
-  essay, setEssay, cursorOffset, setCursorOffset, scrollTop, setScrollTop,
-  onBlur, wordCount, min, max, status, onRetry, canCorrect, correctThreshold,
+  view, essay, setEssay, cursorOffset, setCursorOffset, scrollTop, setScrollTop,
+  onBlur, wordCount, min, max, status, onRetry, canCorrect, correcting, correctionError,
+  correctThreshold, onCorrect, onRetryCorrect,
 }) {
+  const isCorrecting = view === "correcting";
+
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-white">
-      <div className="flex-1 overflow-auto px-5 pt-3 min-h-0">
-        <EssayEditor
-          value={essay}
-          onChange={setEssay}
-          onCursorChange={setCursorOffset}
-          onScrollChange={setScrollTop}
-          onBlur={onBlur}
-          cursorOffset={cursorOffset}
-          scrollTop={scrollTop}
-          autoFocus
-        />
+      <div className={`flex-1 min-h-0 px-5 pt-3 pb-1 ${isCorrecting ? "overflow-visible" : "overflow-auto"}`}>
+        {isCorrecting ? (
+          <CorrectingOverlay error={correctionError} onRetry={onRetryCorrect} compact>
+            <EssayEditor
+              value={essay}
+              onChange={setEssay}
+              onCursorChange={setCursorOffset}
+              onScrollChange={setScrollTop}
+              onBlur={onBlur}
+              cursorOffset={cursorOffset}
+              scrollTop={scrollTop}
+              autoFocus={false}
+              readOnly
+            />
+          </CorrectingOverlay>
+        ) : (
+          <EssayEditor
+            value={essay}
+            onChange={setEssay}
+            onCursorChange={setCursorOffset}
+            onScrollChange={setScrollTop}
+            onBlur={onBlur}
+            cursorOffset={cursorOffset}
+            scrollTop={scrollTop}
+            autoFocus={view === "editor"}
+            readOnly={view !== "editor"}
+          />
+        )}
       </div>
 
       <div className="px-4 py-3 border-t border-[#E5E7EB] flex items-center gap-3 bg-white shrink-0">
         <WordCount value={wordCount} min={min} max={max} size="sm" />
-        <SaveIndicator status={status} onRetry={onRetry} size="sm" />
-        <CorregirButtonMobile disabled={!canCorrect} threshold={correctThreshold} />
+        {view === "editor" && <SaveIndicator status={status} onRetry={onRetry} size="sm" />}
+        <div className="flex-1" />
+        <CorregirButtonMobile
+          view={view}
+          canCorrect={canCorrect}
+          threshold={correctThreshold}
+          correcting={correcting}
+          onClick={onCorrect}
+        />
       </div>
     </div>
   );
 }
 
-function CorregirButtonMobile({ disabled, threshold }) {
+function CorregirButtonMobile({ view, canCorrect, threshold, correcting, onClick }) {
+  if (view === "correcting" || correcting) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="h-10 px-4 rounded-lg font-black text-sm shrink-0 flex items-center gap-1.5 bg-[#D1FAE5] text-[#047857] cursor-not-allowed"
+      >
+        <Sparkles size={14} strokeWidth={2.6} />
+        Corrigiendo…
+      </button>
+    );
+  }
+
   const button = (
     <button
       type="button"
-      disabled={disabled}
-      className={`h-10 px-4 rounded-lg font-black text-sm shrink-0 transition-colors ${
-        disabled
+      onClick={canCorrect ? onClick : undefined}
+      disabled={!canCorrect}
+      className={`h-10 px-4 rounded-lg font-black text-sm shrink-0 flex items-center gap-1.5 transition-colors ${
+        !canCorrect
           ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed"
           : "bg-[#10B981] hover:bg-[#059669] text-white"
       }`}
     >
+      <Check size={14} strokeWidth={2.6} />
       Corregir
     </button>
   );
-  if (!disabled) return button;
+  if (canCorrect) return button;
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>

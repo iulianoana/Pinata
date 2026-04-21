@@ -63,6 +63,16 @@ const FEATURES = [
       </svg>
     ),
   },
+  {
+    id: "redaccion_correction",
+    label: "Redacción Correction",
+    description: "AI model for correcting Spanish writing attempts",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7h10" /><path d="M4 12h7" /><path d="M4 17h6" /><path d="m15 15 2 2 4-4" />
+      </svg>
+    ),
+  },
 ];
 
 const tiers = [...new Set(MODEL_OPTIONS.map((m) => m.tier))];

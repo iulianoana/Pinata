@@ -12,6 +12,7 @@ const EssayEditor = forwardRef(function EssayEditor({
   cursorOffset = null,
   scrollTop = null,
   autoFocus = false,
+  readOnly = false,
   placeholder = "Empieza a escribir tu redacción aquí…",
   maxWidth = 640,
 }, ref) {
@@ -61,7 +62,8 @@ const EssayEditor = forwardRef(function EssayEditor({
         placeholder={placeholder}
         spellCheck="true"
         lang="es"
-        className="font-nunito w-full h-full resize-none border-0 outline-none bg-transparent text-[17px] leading-[1.75] text-[#0F1720] py-4 placeholder:text-[#9CA3AF]"
+        readOnly={readOnly}
+        className={`font-inter w-full h-full resize-none border-0 outline-none bg-transparent text-[17px] leading-[1.75] text-[#0F1720] py-4 placeholder:text-[#9CA3AF] ${readOnly ? "cursor-not-allowed" : ""}`}
         style={{ maxWidth }}
       />
     </div>

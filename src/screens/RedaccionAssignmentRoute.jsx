@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import {
@@ -6,6 +6,7 @@ import {
   fetchOrCreateDraftAttempt,
   deleteAssignment,
   regenerateAssignment,
+  correctAttempt,
 } from "../lib/api";
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -29,10 +30,16 @@ export default function RedaccionAssignmentRoute() {
 
   const [assignment, setAssignment] = useState(null);
   const [attempt, setAttempt] = useState(null);
+  const [correction, setCorrection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [regenerating, setRegenerating] = useState(false);
   const [regenError, setRegenError] = useState("");
+  const [correcting, setCorrecting] = useState(false);
+  const [correctionError, setCorrectionError] = useState("");
+
+  // Guard against double-firing the auto-resume correction call in StrictMode.
+  const resumeFiredRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +53,10 @@ export default function RedaccionAssignmentRoute() {
       .then(([asn, att]) => {
         if (cancelled) return;
         setAssignment(asn);
-        setAttempt(att);
+        // draft-attempt returns { ...attempt, correction: {...}|null }
+        const { correction: embeddedCorrection, ...attemptOnly } = att || {};
+        setAttempt(attemptOnly);
+        setCorrection(embeddedCorrection || null);
       })
       .catch((e) => {
         if (!cancelled) setError(e.message || "No se pudo cargar la redacción.");
@@ -55,6 +65,19 @@ export default function RedaccionAssignmentRoute() {
 
     return () => { cancelled = true; };
   }, [assignmentId]);
+
+  // Auto-resume: if the attempt is submitted but has no correction yet,
+  // the LLM call either never finished or was cut off by reload. Re-fire
+  // the idempotent /correct endpoint; the server returns the existing row
+  // if one got inserted, or redoes the LLM call otherwise.
+  useEffect(() => {
+    if (!attempt || correction || correcting || correctionError) return;
+    if (!attempt.submitted_at) return;
+    if (resumeFiredRef.current) return;
+    resumeFiredRef.current = true;
+    runCorrection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, correction]);
 
   const handleBack = () => navigate(`/lesson/${lessonId}`);
 
@@ -73,7 +96,6 @@ export default function RedaccionAssignmentRoute() {
     setRegenerating(true);
     try {
       const updated = await regenerateAssignment(assignmentId);
-      // Server returns the updated assignment row (full record after Session 2).
       setAssignment((prev) => ({ ...(prev || {}), ...updated }));
     } catch (e) {
       setRegenError(e.message || "No pudimos generar el tema.");
@@ -82,9 +104,43 @@ export default function RedaccionAssignmentRoute() {
     }
   };
 
+  async function runCorrection() {
+    if (!attempt) return;
+    setCorrectionError("");
+    setCorrecting(true);
+    try {
+      const { attempt: updatedAttempt, correction: newCorrection } =
+        await correctAttempt(attempt.id);
+      setAttempt((prev) => ({ ...(prev || {}), ...updatedAttempt }));
+      setCorrection(newCorrection);
+    } catch (e) {
+      setCorrectionError(e.message || "No pudimos corregir la redacción.");
+    } finally {
+      setCorrecting(false);
+    }
+  }
+
+  const handleCorrect = () => {
+    resumeFiredRef.current = true;
+    runCorrection();
+  };
+
+  const handleRetryCorrect = () => {
+    runCorrection();
+  };
+
   if (loading) return <FullPageLoading />;
   if (error) return <FullPageError message={error} onBack={handleBack} />;
   if (!assignment || !attempt) return <FullPageError message="Redacción no disponible." onBack={handleBack} />;
+
+  // Fold the in-flight `correcting` flag into the view so the glow appears
+  // the instant the user clicks, not only after the server responds with
+  // submitted_at. Either the client-side flag OR the persisted column means
+  // "correction in flight".
+  const view =
+    correction ? "review" :
+    (attempt.submitted_at || correcting) ? "correcting" :
+    "editor";
 
   const Shell = isDesktop ? DesktopLazy : MobileLazy;
   return (
@@ -92,10 +148,16 @@ export default function RedaccionAssignmentRoute() {
       <Shell
         assignment={assignment}
         attempt={attempt}
+        correction={correction}
+        view={view}
+        correcting={correcting || view === "correcting"}
+        correctionError={correctionError}
         onBack={handleBack}
         onDelete={handleDelete}
         onRegenerate={handleRegenerate}
         regenerating={regenerating}
+        onCorrect={handleCorrect}
+        onRetryCorrect={handleRetryCorrect}
       />
       {regenError && (
         <RegenErrorToast message={regenError} onRetry={handleRegenerate} onDismiss={() => setRegenError("")} />
