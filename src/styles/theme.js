@@ -64,8 +64,8 @@ export const injectStyles = () => {
     /* Lessons feature */
     .lesson-delete-hover { display: none; }
     mark { background: #B0E0D8; color: #1A2F2B; padding: 1px 2px; border-radius: 3px; }
-    /* Lesson Reader PDF panel (default = mobile) */
-    .pdf-side-panel-desktop { display: none !important; }
+    /* Lesson Reader side panel (default = mobile, hidden) */
+    .side-panel-desktop { display: none !important; }
     .pdf-section-inline { display: block; }
     @media (min-width: 1024px) {
       .desktop-sidebar { display: flex !important; }
@@ -84,16 +84,14 @@ export const injectStyles = () => {
       .quiz-desktop-header { display: flex !important; }
       /* Lessons desktop overrides */
       .lesson-delete-hover { display: inline !important; }
-      .lesson-reader-container { padding-top: 8px !important; max-width: 860px; }
+      .lesson-reader-container { padding-top: 8px !important; max-width: 100%; }
       .lesson-reader-wrapper { height: 100vh; overflow: hidden; }
       .lesson-reader-root { height: 100% !important; min-height: 0 !important; display: flex !important; flex-direction: column; }
       .lesson-reader-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
       .lesson-reader-scroll { flex: 1; overflow-y: auto; min-width: 0; }
-      .pdf-side-panel-desktop { display: block !important; flex-shrink: 0; }
+      .side-panel-desktop { display: flex !important; flex-shrink: 0; }
       .pdf-section-inline { display: none !important; }
-      .quiz-sidebar-desktop { display: flex !important; flex-direction: column; flex-shrink: 0; width: 320px; overflow-y: auto; border-left: 1px solid #D4F0EB; background: #FFFFFF; }
       .quiz-section-mobile { display: none !important; }
-      .lesson-reader-panel-open.lesson-reader-container { max-width: 100% !important; }
       .lessons-footer-text { display: none; }
     }
     /* Title edit pen — show on hover (desktop only) */

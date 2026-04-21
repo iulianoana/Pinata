@@ -95,9 +95,9 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const PANEL_STORAGE_KEY = "pinata-pdf-panel-width";
-const DEFAULT_PANEL_PCT = 50; // % of usable content area
-const MIN_PANEL_W = 300;
+const PANEL_STORAGE_KEY = "pinata-side-panel-width";
+const DEFAULT_PANEL_W = 400; // px, used on first load before the user resizes
+const MIN_PANEL_W = 320;
 const MAX_PANEL_PCT = 70;
 
 function getSavedPanelWidth() {
@@ -107,7 +107,6 @@ function getSavedPanelWidth() {
 export default function LessonReader({ lesson, weekContext, week, onBack }) {
   const navigate = useNavigate();
   const { pdfInfo, isLoading: pdfLoading, uploadProgress, uploadPhase, uploadPdf, viewPdf, deletePdf } = useLessonPdf(lesson.id);
-  const [pdfPanelOpen, setPdfPanelOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [loadingPdfView, setLoadingPdfView] = useState(false);
   const [panelWidth, setPanelWidth] = useState(() => getSavedPanelWidth());
@@ -120,7 +119,7 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
   const panelFileRef = useRef(null);
   const [panelDragging, setPanelDragging] = useState(false);
   const [panelDeleting, setPanelDeleting] = useState(false);
-  const [panelTab, setPanelTab] = useState("pdf"); // "pdf" | "quizzes"
+  const [sideTab, setSideTab] = useState("resources"); // "resources" | "pdf"
 
   // Title editing state
   const [editingTitle, setEditingTitle] = useState(false);
@@ -207,12 +206,12 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
     return { bestScore, avgScore, totalAttempts, lastPracticed };
   }, [quizzes]);
 
-  // Compute effective panel width (px). Default to ~50% of body.
+  // Compute effective panel width (px). Fixed default on first load; user resize persists per-device.
   const getEffectiveWidth = useCallback(() => {
     if (panelWidthRef.current) return panelWidthRef.current;
     const bodyW = bodyRef.current?.offsetWidth;
-    if (bodyW) return Math.max(MIN_PANEL_W, Math.round(bodyW * DEFAULT_PANEL_PCT / 100));
-    return 600;
+    if (bodyW) return Math.min(Math.max(MIN_PANEL_W, DEFAULT_PANEL_W), Math.round(bodyW * MAX_PANEL_PCT / 100));
+    return DEFAULT_PANEL_W;
   }, []);
 
   // Resize drag handlers
@@ -245,9 +244,9 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
     document.addEventListener("mouseup", onUp);
   }, [getEffectiveWidth]);
 
-  // Auto-load PDF into iframe when panel opens and PDF exists
+  // Auto-load PDF into iframe when user switches to the PDF tab and a PDF exists
   useEffect(() => {
-    if (pdfPanelOpen && pdfInfo && !pdfBlobUrl) {
+    if (sideTab === "pdf" && pdfInfo && !pdfBlobUrl) {
       setLoadingPdfView(true);
       viewPdf()
         .then((blob) => {
@@ -256,7 +255,7 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
         .catch(() => {})
         .finally(() => setLoadingPdfView(false));
     }
-  }, [pdfPanelOpen, pdfInfo?.name]);
+  }, [sideTab, pdfInfo?.name]);
 
   // Clear blob URL when PDF is deleted
   useEffect(() => {
@@ -517,42 +516,13 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
         <span style={{ fontSize: 15, fontWeight: 800, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {lesson.title}
         </span>
-
-        {/* Course PDF / Attach PDF button */}
-        <button
-          onClick={() => setPdfPanelOpen((prev) => !prev)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 14px", borderRadius: 10,
-            border: `1.5px solid ${C.border}`, background: "none",
-            color: C.text, fontSize: 13, fontWeight: 700,
-            cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-            transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.text; }}
-        >
-          {pdfLoading || pdfInfo ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-          )}
-          {pdfLoading || pdfInfo ? "Course PDF" : "Attach PDF"}
-        </button>
       </div>
 
-      {/* Body: content + quiz sidebar + PDF panel */}
+      {/* Body: markdown content + unified tabbed side panel (desktop only) */}
       <div className="lesson-reader-body" ref={bodyRef}>
         {/* Main scrollable content */}
         <div className="lesson-reader-scroll">
-          <div className={`app-container lesson-reader-container ${pdfPanelOpen ? "lesson-reader-panel-open" : ""}`} style={{ padding: "0 20px 60px" }}>
+          <div className="app-container lesson-reader-container" style={{ padding: "0 20px 60px" }}>
             {/* Mobile back button — hidden on desktop */}
             <button className="quiz-home-btn" onClick={onBack} style={{
               display: "inline-flex", alignItems: "center", gap: 6,
@@ -696,177 +666,121 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
           </div>
         </div>
 
-        {/* Desktop Quiz sidebar — hidden when PDF panel is open */}
-        {!pdfPanelOpen && (
-          <div className="quiz-sidebar-desktop" style={{ display: "none" }}>
-            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Quizzes card */}
-              <div style={{
-                background: C.card, borderRadius: 14, padding: 20,
-                border: `1px solid ${C.border}`,
-              }}>
-                {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 16 }}>🧩</span>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Quizzes</span>
-                  </div>
-                  {!quizzesLoading && quizzes.length > 0 && (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
-                      {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
-                    </span>
-                  )}
-                </div>
-                {renderQuizList(false)}
-              </div>
-
-              {/* Redacción card — desktop sidebar */}
-              <RedaccionCard lessonId={lesson.id} weekId={lesson.week_id} />
-
-              {/* Links card — desktop sidebar */}
-              <LessonLinks lessonId={lesson.id} />
-
-              {/* Lesson Progress card */}
-              {renderProgressCard()}
-            </div>
-          </div>
-        )}
-
-        {/* Desktop PDF side panel */}
-        <div className="pdf-side-panel-desktop" style={{
-          width: pdfPanelOpen ? getEffectiveWidth() : 0,
-          overflow: "hidden",
-          transition: isResizing ? "none" : "width 0.3s ease",
+        {/* Desktop unified side panel — always visible, tabbed, resizable */}
+        <div className="side-panel-desktop" style={{
+          width: getEffectiveWidth(),
+          flexShrink: 0,
           position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          borderLeft: `1px solid ${C.border}`,
+          background: C.card,
+          overflow: "hidden",
         }}>
-          {/* Resize drag handle */}
-          {pdfPanelOpen && (
-            <div
-              onMouseDown={onResizeStart}
-              style={{
-                position: "absolute", left: 0, top: 0, bottom: 0, width: 6,
-                cursor: "col-resize", zIndex: 5,
-                background: "transparent",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = C.border)}
-              onMouseLeave={(e) => { if (!isResizing) e.currentTarget.style.background = "transparent"; }}
-            />
-          )}
+          {/* Resize drag handle — left edge */}
+          <div
+            onMouseDown={onResizeStart}
+            style={{
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 6,
+              cursor: "col-resize", zIndex: 5, background: "transparent",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = C.border)}
+            onMouseLeave={(e) => { if (!isResizing) e.currentTarget.style.background = "transparent"; }}
+          />
+
+          {/* Tab header */}
           <div style={{
-            position: "absolute", right: 0, top: 0, bottom: 0,
-            width: getEffectiveWidth(), display: "flex", flexDirection: "column",
-            borderLeft: `1px solid ${C.border}`, background: C.card,
+            display: "flex", alignItems: "center", padding: "10px 12px",
+            borderBottom: `1px solid ${C.border}`, flexShrink: 0, gap: 4,
           }}>
-            {/* Panel header — single row: tabs + file info + close */}
-            <div style={{
-              display: "flex", alignItems: "center", padding: "10px 12px",
-              borderBottom: `1px solid ${C.border}`, flexShrink: 0, gap: 4,
-            }}>
-              {/* Tabs */}
-              <button onClick={() => setPanelTab("pdf")} style={{
-                background: "none", border: "none",
-                borderBottom: panelTab === "pdf" ? `2px solid ${C.text}` : "2px solid transparent",
-                padding: "4px 8px", fontSize: 13,
-                fontWeight: panelTab === "pdf" ? 800 : 600,
-                color: panelTab === "pdf" ? C.text : C.muted,
-                cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-                flexShrink: 0, transition: "all 0.15s",
-              }}>Course PDF</button>
-              <button onClick={() => setPanelTab("quizzes")} style={{
-                background: "none", border: "none",
-                borderBottom: panelTab === "quizzes" ? `2px solid #8B5CF6` : "2px solid transparent",
-                padding: "4px 8px", fontSize: 13,
-                fontWeight: panelTab === "quizzes" ? 800 : 600,
-                color: panelTab === "quizzes" ? "#8B5CF6" : C.muted,
-                cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-                flexShrink: 0, transition: "all 0.15s",
-              }}>Quizzes</button>
+            <button onClick={() => setSideTab("resources")} style={{
+              background: "none", border: "none",
+              borderBottom: sideTab === "resources" ? `2px solid ${C.accent}` : "2px solid transparent",
+              padding: "4px 8px", fontSize: 13,
+              fontWeight: sideTab === "resources" ? 800 : 600,
+              color: sideTab === "resources" ? C.accent : C.muted,
+              cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+              flexShrink: 0, transition: "all 0.15s",
+            }}>Resources</button>
+            <button onClick={() => setSideTab("pdf")} style={{
+              background: "none", border: "none",
+              borderBottom: sideTab === "pdf" ? `2px solid ${C.accent}` : "2px solid transparent",
+              padding: "4px 8px", fontSize: 13,
+              fontWeight: sideTab === "pdf" ? 800 : 600,
+              color: sideTab === "pdf" ? C.accent : C.muted,
+              cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+              flexShrink: 0, transition: "all 0.15s",
+            }}>Course PDF</button>
 
-              {/* File info — inline after tabs, only when PDF attached and on PDF tab */}
-              {panelTab === "pdf" && pdfInfo && uploadProgress === null && !pdfLoading ? (
-                <>
-                  <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, marginLeft: 8 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.error} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {pdfInfo.name}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, flexShrink: 0 }}>
-                    {formatSize(pdfInfo.size)}
+            {/* File info — only on PDF tab when a PDF is attached */}
+            {sideTab === "pdf" && pdfInfo && uploadProgress === null && !pdfLoading ? (
+              <>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, marginLeft: 8 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.error} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {pdfInfo.name}
                   </span>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                    background: pdfInfo.isCached ? C.success : C.muted,
-                  }} title={pdfInfo.isCached ? "Available offline" : "Cloud only"} />
-                  <button onClick={handlePanelDelete} disabled={panelDeleting} style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: C.muted, padding: 2, display: "flex",
-                    alignItems: "center", justifyContent: "center",
-                    transition: "color 0.15s", flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = C.error)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                </>
-              ) : (
-                <div style={{ flex: 1 }} />
-              )}
-
-              {/* Close */}
-              <button onClick={() => setPdfPanelOpen(false)} style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: C.muted, padding: 2, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                transition: "color 0.15s", flexShrink: 0,
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Panel body */}
-            {panelTab === "pdf" ? (
-              <div style={{ flex: 1, padding: pdfInfo && !pdfLoading && uploadProgress === null ? "8px 8px" : "20px 20px", overflowY: "auto" }}>
-                {renderPanelContent()}
-              </div>
-            ) : (
-              <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {/* Quizzes card */}
-                  <div style={{
-                    background: C.card, borderRadius: 14, padding: 20,
-                    border: `1px solid ${C.border}`,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 16 }}>🧩</span>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Quizzes</span>
-                      </div>
-                      {!quizzesLoading && quizzes.length > 0 && (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
-                          {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
-                        </span>
-                      )}
-                    </div>
-                    {renderQuizList(false)}
-                  </div>
-                  {/* Links card — PDF panel quizzes tab */}
-                  <LessonLinks lessonId={lesson.id} />
-                  {renderProgressCard()}
                 </div>
-              </div>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, flexShrink: 0 }}>
+                  {formatSize(pdfInfo.size)}
+                </span>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: pdfInfo.isCached ? C.success : C.muted,
+                }} title={pdfInfo.isCached ? "Available offline" : "Cloud only"} />
+                <button onClick={handlePanelDelete} disabled={panelDeleting} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: C.muted, padding: 2, display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  transition: "color 0.15s", flexShrink: 0,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = C.error)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <div style={{ flex: 1 }} />
             )}
           </div>
+
+          {/* Panel body */}
+          {sideTab === "resources" ? (
+            <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Quizzes card */}
+                <div style={{
+                  background: C.card, borderRadius: 14, padding: 20,
+                  border: `1px solid ${C.border}`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>🧩</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Quizzes</span>
+                    </div>
+                    {!quizzesLoading && quizzes.length > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
+                        {quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""}
+                      </span>
+                    )}
+                  </div>
+                  {renderQuizList(false)}
+                </div>
+                <RedaccionCard lessonId={lesson.id} weekId={lesson.week_id} />
+                <LessonLinks lessonId={lesson.id} />
+                {renderProgressCard()}
+              </div>
+            </div>
+          ) : (
+            <div style={{ flex: 1, padding: pdfInfo && !pdfLoading && uploadProgress === null ? "8px 8px" : "20px 20px", overflowY: "auto" }}>
+              {renderPanelContent()}
+            </div>
+          )}
         </div>
       </div>
 
