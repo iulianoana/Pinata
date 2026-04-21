@@ -5,6 +5,7 @@ import { C } from "../styles/theme";
 
 
 const MODEL_OPTIONS = [
+  { id: "claude-opus-4-7", displayName: "Claude Opus 4.7", provider: "anthropic", tier: "Flagship" },
   { id: "claude-opus-4-6", displayName: "Claude Opus 4.6", provider: "anthropic", tier: "Flagship" },
   { id: "gpt-5.4", displayName: "GPT-5.4", provider: "openai", tier: "Flagship" },
   { id: "claude-sonnet-4-6", displayName: "Claude Sonnet 4.6", provider: "anthropic", tier: "Mid-tier" },
