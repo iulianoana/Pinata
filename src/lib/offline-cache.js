@@ -155,6 +155,18 @@ export async function getCachedAssignments(lessonId) {
   return db.assignments.where("lesson_id").equals(lessonId).toArray();
 }
 
+// Update title/brief for a single cached assignment after regenerate.
+// Skips if the row isn't cached yet (the list query would have inserted it otherwise).
+export async function cacheAssignmentBrief(assignmentId, updated) {
+  const existing = await db.assignments.get(assignmentId);
+  if (!existing) return;
+  await db.assignments.put({
+    ...existing,
+    title: updated.title ?? existing.title,
+    updated_at: updated.updated_at ?? existing.updated_at,
+  });
+}
+
 // ── Prefetch all data for offline use ──
 
 export async function prefetchAll(fetchWeeksFn, fetchLessonsFn, fetchQuizzesFn, options = {}) {

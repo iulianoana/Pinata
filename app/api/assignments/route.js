@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { generateBrief } from "@/lib/redaccion/generate-brief.js";
 
 function getSupabase(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -8,29 +9,6 @@ function getSupabase(req) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
-}
-
-// Session 1: brief is a placeholder. Session 2 replaces this with real LLM output.
-const MOCK_TITLES = [
-  "Mi familia y yo",
-  "Mi rutina diaria",
-  "Mis planes del fin de semana",
-  "Un día típico",
-  "Los gustos de mi pareja",
-];
-
-function buildMockBrief() {
-  const title = MOCK_TITLES[Math.floor(Math.random() * MOCK_TITLES.length)];
-  return {
-    title,
-    brief: {
-      title,
-      prompt: "Escribe un párrafo corto usando el vocabulario y la gramática de esta lección.",
-      targetWordCount: 150,
-      difficulty: "beginner",
-      _mock: true,
-    },
-  };
 }
 
 export async function GET(req) {
@@ -108,14 +86,39 @@ export async function POST(req) {
 
   const { data: lesson, error: lessonError } = await supabase
     .from("lessons")
-    .select("id")
+    .select("id, title, markdown_content, week_id, sort_order")
     .eq("id", lesson_id)
     .single();
   if (lessonError || !lesson) {
     return Response.json({ error: "Lesson not found or access denied" }, { status: 404 });
   }
 
-  const { title, brief } = buildMockBrief();
+  let unitLessons = null;
+  if (scope === "unit" && lesson.week_id) {
+    const { data: siblings, error: siblingsErr } = await supabase
+      .from("lessons")
+      .select("id, title, markdown_content, sort_order")
+      .eq("week_id", lesson.week_id)
+      .order("sort_order", { ascending: true });
+    if (siblingsErr) {
+      return Response.json({ error: siblingsErr.message }, { status: 500 });
+    }
+    unitLessons = siblings || [];
+  }
+
+  let generated;
+  try {
+    generated = await generateBrief({
+      supabase,
+      userId: user.id,
+      lesson,
+      unitLessons,
+      scope,
+    });
+  } catch (e) {
+    console.error("[assignments/POST] generation failed:", e);
+    return Response.json({ error: "Failed to generate assignment" }, { status: 502 });
+  }
 
   const { data, error } = await supabase
     .from("assignments")
@@ -123,8 +126,8 @@ export async function POST(req) {
       user_id: user.id,
       lesson_id,
       scope,
-      title,
-      brief,
+      title: generated.title,
+      brief: generated.brief,
     })
     .select()
     .single();

@@ -3,7 +3,7 @@ import {
   cacheWeeks, getCachedWeeks,
   cacheLessons, getCachedLessons, cacheLesson, getCachedLesson,
   cacheQuizzes, getCachedQuizzes,
-  cacheAssignments, getCachedAssignments,
+  cacheAssignments, getCachedAssignments, cacheAssignmentBrief,
 } from "./offline-cache.js";
 
 async function authHeaders() {
@@ -364,6 +364,18 @@ export async function deleteAssignment(assignmentId) {
   const res = await fetch(`/api/assignments/${assignmentId}`, { method: "DELETE", headers });
   if (!res.ok) throw new Error("Failed to delete assignment");
   return res.json();
+}
+
+export async function regenerateAssignment(assignmentId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/assignments/${assignmentId}/regenerate`, { method: "POST", headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to regenerate assignment");
+  }
+  const updated = await res.json();
+  cacheAssignmentBrief(assignmentId, updated).catch(() => {});
+  return updated;
 }
 
 // ── Carolina Resources (weeks + lessons for pickers) ──
