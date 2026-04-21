@@ -9,6 +9,7 @@ import QuizMiniCard from "../quizzes/QuizMiniCard";
 import AddQuizModal from "../quizzes/AddQuizModal";
 import AddQuizSheet from "../AddQuizSheet";
 import LessonLinks from "./LessonLinks";
+import RedaccionCard from "../redaccion/RedaccionCard";
 import { fetchQuizzes, updateLesson } from "../../lib/api";
 import { relativeTime } from "../../utils/helpers";
 
@@ -678,6 +679,10 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
                 </div>
                 {renderQuizList(true)}
               </div>
+              {/* Redacción card — mobile */}
+              <div style={{ marginTop: 16 }}>
+                <RedaccionCard lessonId={lesson.id} weekId={lesson.week_id} />
+              </div>
               {/* Links card — mobile */}
               <div style={{ marginTop: 16 }}>
                 <LessonLinks lessonId={lesson.id} />
@@ -714,6 +719,9 @@ export default function LessonReader({ lesson, weekContext, week, onBack }) {
                 </div>
                 {renderQuizList(false)}
               </div>
+
+              {/* Redacción card — desktop sidebar */}
+              <RedaccionCard lessonId={lesson.id} weekId={lesson.week_id} />
 
               {/* Links card — desktop sidebar */}
               <LessonLinks lessonId={lesson.id} />

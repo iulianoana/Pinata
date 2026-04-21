@@ -3,6 +3,7 @@ import {
   cacheWeeks, getCachedWeeks,
   cacheLessons, getCachedLessons, cacheLesson, getCachedLesson,
   cacheQuizzes, getCachedQuizzes,
+  cacheAssignments, getCachedAssignments,
 } from "./offline-cache.js";
 
 async function authHeaders() {
@@ -312,6 +313,56 @@ export async function deleteQuiz(quizId) {
   const headers = await authHeaders();
   const res = await fetch(`/api/quizzes/${quizId}`, { method: "DELETE", headers });
   if (!res.ok) throw new Error("Failed to delete quiz");
+  return res.json();
+}
+
+// ── Redacción assignments ──
+
+export async function fetchAssignmentsByLesson(lessonId) {
+  try {
+    const headers = await authHeaders();
+    const res = await fetch(`/api/assignments?lesson_id=${encodeURIComponent(lessonId)}`, { headers });
+    if (!res.ok) throw new Error("Failed to fetch assignments");
+    const data = await res.json();
+    // Tag with lesson_id so the Dexie secondary index works.
+    const tagged = data.map((a) => ({ ...a, lesson_id: lessonId }));
+    cacheAssignments(lessonId, tagged).catch(() => {});
+    return tagged;
+  } catch (e) {
+    const cached = await getCachedAssignments(lessonId);
+    if (cached.length > 0) return cached;
+    throw e;
+  }
+}
+
+export async function fetchAssignment(assignmentId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/assignments/${assignmentId}`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to fetch assignment");
+  }
+  return res.json();
+}
+
+export async function createAssignment({ lessonId, scope }) {
+  const headers = await authHeaders();
+  const res = await fetch("/api/assignments", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ lesson_id: lessonId, scope }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to create assignment");
+  }
+  return res.json();
+}
+
+export async function deleteAssignment(assignmentId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/assignments/${assignmentId}`, { method: "DELETE", headers });
+  if (!res.ok) throw new Error("Failed to delete assignment");
   return res.json();
 }
 

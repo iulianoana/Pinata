@@ -62,3 +62,46 @@ Supabase Auth with magic link (email). Session managed client-side via `supabase
 ### Key data entities
 
 Weeks > Lessons > Quizzes (hierarchy). Quizzes belong to either a lesson or a week (not both). Quiz questions are stored as JSONB in `quiz_data`. Other entities: `chat_sessions`/`chat_messages` (Carolina), `vocabulary`, `lesson_links`, `user_models`.
+
+## Dev workflow
+
+Use this for non-trivial coding sessions (new features, multi-file changes, anything with DB migrations). Skip for typos, one-line fixes, pure questions.
+
+### 1. Plan first
+
+Enter plan mode. Explore the codebase with `Explore` subagents before proposing anything. Produce a plan file that lists: context, the decisions, critical file paths, references to existing utilities to reuse, and a verification section.
+
+### 2. Ask plenty of questions, in plain English
+
+Use `AskUserQuestion` (up to 4 per batch) to resolve unknowns before writing the plan. Rules:
+- **Plain English only.** No jargon. Dumb it down. Assume the user doesn't know what Prisma, Dexie, RLS, etc. mean.
+- Always **recommend an option** (put it first, add "(Recommended)").
+- Spell out the tradeoff behind each option in one sentence.
+- Prefer asking over assuming. It's cheap.
+
+Only call `ExitPlanMode` once the plan is final.
+
+### 3. Code to the codebase, not to your preferences
+
+**The existing style wins, always.** Before writing new code, read neighbor files and match their conventions — routing (`/lesson/:id` is singular), Tailwind token names (the config overrides defaults), inline-style-vs-Tailwind choices per component, API route patterns (`getSupabase(req)` helper copied per-file, not shared), migration file naming (`YYYYMMDD_description.sql`). If the doc you're working from conflicts with the codebase, the codebase wins — flag the mismatch to the user but follow the existing pattern.
+
+Keep tasks tracked via `TaskCreate`/`TaskUpdate` as you go.
+
+### 4. Write a 50-line notes file for future agents
+
+When coding is done, save a condensed markdown summary alongside the session brief (e.g. `docs/<feature>/<feature>-session-N-notes.md`). Include: files created/edited, schema shape, non-obvious decisions, deviations from the original plan, and gotchas a future agent would trip on. Keep it under 50 lines. This is a tech doc for agents, not prose for humans.
+
+### 5. Give the user a plain-English wrap-up
+
+Present in the chat, dumbed down:
+- **1-paragraph summary** of what now works end-to-end.
+- **Any manual steps** they need to run (SQL migrations, env changes, dashboard actions) — spelled out with file paths.
+- **A 5-step test plan**, each step with a ✅ pass criterion. Cover: happy path, at least one edge case, mobile if relevant.
+
+### 6. Wait for the OK before committing
+
+Don't commit or push until the user confirms the test passed. When they confirm:
+- Commit message follows the repo's conventional style from `git log`: `feat(area): …`, `fix(area): …`, `docs(area): …`, `refactor(area): …`.
+- Keep the default `Co-Authored-By: Claude …` trailer.
+- Push to `main` only after commit succeeds — this repo ships direct to main.
+- Never `--no-verify`, `--force-push`, or `--amend` a published commit.

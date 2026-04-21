@@ -16,6 +16,7 @@ import ResultsRoute from "./screens/ResultsRoute";
 import DialogScreen from "./screens/DialogScreen";
 import LessonsScreen from "./screens/LessonsScreen";
 import LessonRoute from "./screens/LessonRoute";
+import RedaccionAssignmentRoute from "./screens/RedaccionAssignmentRoute";
 import CarolinaScreen from "./screens/CarolinaScreen";
 import StorageScreen from "./screens/StorageScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -166,6 +167,7 @@ export default function App() {
         <Route path="/lessons" element={session ? <LessonsScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/vocabulary" element={session ? <VocabularyScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/lesson/:lessonId" element={session ? <LessonRoute /> : <Navigate to="/login" replace />} />
+        <Route path="/lesson/:lessonId/redaccion/:assignmentId" element={session ? <RedaccionAssignmentRoute /> : <Navigate to="/login" replace />} />
         <Route path="/dialog" element={session ? <DialogScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/carolina" element={session ? <CarolinaScreen session={session} /> : <Navigate to="/login" replace />} />
         <Route path="/storage" element={session ? <StorageScreen session={session} /> : <Navigate to="/login" replace />} />

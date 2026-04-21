@@ -29,6 +29,17 @@ db.version(3).stores({
   drillPacks: "id, verb_id, tense",
   vocabulary: "id, word",           // vocabulary entries
 });
+db.version(4).stores({
+  weeks: "id",
+  lessons: "id, week_id",
+  quizzes: "id, lesson_id, week_id",
+  quizData: "id",
+  apiResponses: "key",
+  verbs: "id",
+  drillPacks: "id, verb_id, tense",
+  vocabulary: "id, word",
+  assignments: "id, lesson_id",     // Redacción assignment rows
+});
 
 // ── Weeks ──
 
@@ -128,6 +139,20 @@ export async function replaceCachedVocabulary(words) {
   // Full-list replacement so locally-deleted entries clear from the cache.
   await db.vocabulary.clear();
   if (words && words.length > 0) await db.vocabulary.bulkPut(words);
+}
+
+// ── Assignments (Redacción) ──
+
+// Replace all cached rows for the lesson so deletions don't leave ghosts.
+export async function cacheAssignments(lessonId, rows) {
+  await db.transaction("rw", db.assignments, async () => {
+    await db.assignments.where("lesson_id").equals(lessonId).delete();
+    if (rows && rows.length > 0) await db.assignments.bulkPut(rows);
+  });
+}
+
+export async function getCachedAssignments(lessonId) {
+  return db.assignments.where("lesson_id").equals(lessonId).toArray();
 }
 
 // ── Prefetch all data for offline use ──
