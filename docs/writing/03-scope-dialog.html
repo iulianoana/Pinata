@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Piñata · Redacción — Design Pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Nunito', 'system-ui', 'sans-serif'] },
+        colors: {
+          // Pulled from Piñata screenshots
+          teal: {
+            50:  '#ECFDF5',
+            100: '#D1FAE5',
+            200: '#A7F3D0',
+            300: '#6EE7B7',
+            400: '#34D399',
+            500: '#10B981',
+            600: '#059669',
+            700: '#047857',
+            800: '#065F46',
+          },
+          // Redacción accent — amber (writing/ink/paper)
+          redac: {
+            50:  '#FFFBEB',
+            100: '#FEF3C7',
+            200: '#FDE68A',
+            300: '#FCD34D',
+            400: '#FBBF24',
+            500: '#F59E0B',
+            600: '#D97706',
+            700: '#B45309',
+          },
+          ink: {
+            900: '#0F1720',
+            800: '#1F2937',
+            700: '#374151',
+            600: '#4B5563',
+            500: '#6B7280',
+            400: '#9CA3AF',
+            300: '#D1D5DB',
+            200: '#E5E7EB',
+            100: '#F3F4F6',
+            50:  '#F9FAFB',
+          },
+        },
+      }
+    }
+  }
+</script>
+<style>
+  html { font-family: 'Nunito', system-ui, sans-serif; }
+  body { background: #EEF0F3; color: #0F1720; -webkit-font-smoothing: antialiased; }
+  /* Frame shadow for Figma-style screen presentation */
+  .frame-shadow {
+    box-shadow:
+      0 0 0 1px rgba(15, 23, 32, 0.06),
+      0 30px 60px -20px rgba(15, 23, 32, 0.22),
+      0 16px 30px -16px rgba(15, 23, 32, 0.14);
+  }
+  .screen-label {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  /* Dashed outline with proper spacing */
+  .dash-border {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%238B5CF6' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  .dash-border-amber {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23F59E0B' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  .dash-border-teal {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%2310B981' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  /* Inline correction styles */
+  .strike-red {
+    text-decoration: line-through;
+    text-decoration-color: #EF4444;
+    text-decoration-thickness: 2px;
+    color: #991B1B;
+    background: #FEF2F2;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .fix-green {
+    color: #065F46;
+    background: #D1FAE5;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .minor-amber {
+    color: #92400E;
+    border-bottom: 2px dotted #F59E0B;
+    padding-bottom: 1px;
+    background: #FFFBEB;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .sug-amber {
+    color: #B45309;
+    background: #FEF3C7;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .err-note {
+    font-style: italic;
+    color: #6B7280;
+    font-size: 0.8125rem;
+  }
+  /* Device frames */
+  .device-mobile {
+    width: 390px;
+    border-radius: 40px;
+    background: #0F1720;
+    padding: 10px;
+    box-shadow:
+      0 0 0 2px rgba(15, 23, 32, 0.12),
+      0 40px 70px -30px rgba(15, 23, 32, 0.4);
+  }
+  .device-mobile-inner {
+    border-radius: 32px;
+    overflow: hidden;
+    background: #F5F6F8;
+    height: 820px;
+    position: relative;
+  }
+  /* Notch */
+  .mobile-notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 24px; background: #0F1720; border-radius: 20px; z-index: 40;
+  }
+  /* Status bar */
+  .status-bar {
+    height: 44px; display:flex; align-items:center; justify-content:space-between;
+    padding: 0 28px; font-weight: 700; font-size: 14px; color: #0F1720;
+    padding-top: 14px;
+  }
+  /* scrollbar track for mock only */
+  .mock-scroll::-webkit-scrollbar { width: 8px; }
+  .mock-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+  .mock-scroll::-webkit-scrollbar-track { background: transparent; }
+  /* Caret blink for textarea */
+  .caret::after { content: '|'; color:#10B981; animation: blink 1s steps(2) infinite; font-weight: 400; margin-left: 1px; }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* Slight tile decorations */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(15,23,32,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,32,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- =================== 03 · SCOPE MODAL =================== -->
+<section class="max-w-[1440px] mx-auto px-8 pt-6 pb-16">
+  <div class="flex items-baseline gap-4 mb-6">
+    <span class="screen-label text-ink-400 font-bold text-xs">03 / DESKTOP</span>
+    <h2 class="font-black text-2xl text-ink-900">Scope selection · Dialog</h2>
+    <span class="text-ink-500 text-sm">shadcn Dialog · 480px · dim backdrop behind</span>
+  </div>
+
+  <!-- Frame with dimmed app behind + dialog -->
+  <div class="relative rounded-2xl overflow-hidden frame-shadow grid-bg bg-ink-100" style="width:1280px; max-width:100%; height:620px;">
+    <!-- faint app behind -->
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+
+    <!-- Dialog -->
+    <div class="absolute inset-0 grid place-items-center p-10">
+      <div class="bg-white rounded-2xl w-[480px] p-6 shadow-2xl">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-7 h-7 rounded-md bg-redac-100 grid place-items-center"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg></div>
+              <div class="font-black text-ink-900 text-lg">Nueva redacción</div>
+            </div>
+            <div class="text-ink-500 text-sm">Elige el alcance del contenido</div>
+          </div>
+          <button class="w-8 h-8 rounded-lg hover:bg-ink-100 grid place-items-center text-ink-500"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <!-- Radio cards -->
+        <div class="mt-4 space-y-3">
+          <!-- Selected: Unidad completa (default, recommended) -->
+          <label class="block rounded-xl border-2 border-redac-500 bg-redac-50 p-4 cursor-pointer relative">
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 w-5 h-5 rounded-full border-[6px] border-redac-500 bg-white shrink-0"></div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <div class="font-black text-ink-900">Unidad completa</div>
+                  <span class="px-1.5 py-0.5 bg-redac-500 text-white text-[10px] font-black rounded tracking-wider">RECOMENDADO</span>
+                </div>
+                <div class="text-ink-700 text-sm mt-0.5">Basado en las 3 lecciones de la Unidad 5.</div>
+                <div class="mt-2 flex flex-wrap gap-1">
+                  <span class="text-[10px] font-bold text-redac-700 bg-white border border-redac-200 px-1.5 py-0.5 rounded">Lección 1</span>
+                  <span class="text-[10px] font-bold text-redac-700 bg-white border border-redac-200 px-1.5 py-0.5 rounded">Lección 2</span>
+                  <span class="text-[10px] font-bold text-redac-700 bg-white border border-redac-200 px-1.5 py-0.5 rounded">Lección 3</span>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <!-- Unselected: Single lesson -->
+          <label class="block rounded-xl border-2 border-ink-200 bg-white p-4 cursor-pointer hover:border-ink-300">
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 w-5 h-5 rounded-full border-2 border-ink-300 bg-white shrink-0"></div>
+              <div class="flex-1">
+                <div class="font-black text-ink-900">Solo esta lección</div>
+                <div class="text-ink-600 text-sm mt-0.5">Basado en el contenido de <em>Leccio n 3 · La Familia en Español</em>.</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+          <button class="h-10 px-5 rounded-lg font-bold text-sm text-ink-700 hover:bg-ink-100">Cancelar</button>
+          <button class="h-10 px-5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+            Generar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4 mt-5 text-sm">
+    <div class="bg-white rounded-xl border border-ink-200 p-4"><div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-1">Selected style</div><div class="text-ink-700 leading-relaxed">Amber 2px border + amber-50 fill + solid amber radio dot. Selected item also shows contributing lessons as chips.</div></div>
+    <div class="bg-white rounded-xl border border-ink-200 p-4"><div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-1">Disabled rule</div><div class="text-ink-700 leading-relaxed">If unit has only 1 lesson, hide the "Unidad completa" option entirely — don't grey it out, don't explain. Default select the only remaining option.</div></div>
+    <div class="bg-white rounded-xl border border-ink-200 p-4"><div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-1">Primary button</div><div class="text-ink-700 leading-relaxed">Teal (brand primary), not amber. Amber stays reserved for Redacción surfaces; CTA affirmations use the brand.</div></div>
+  </div>
+</section>
+
+
+</body>
+</html>

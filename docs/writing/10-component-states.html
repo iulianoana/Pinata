@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Piñata · Redacción — Design Pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Nunito', 'system-ui', 'sans-serif'] },
+        colors: {
+          // Pulled from Piñata screenshots
+          teal: {
+            50:  '#ECFDF5',
+            100: '#D1FAE5',
+            200: '#A7F3D0',
+            300: '#6EE7B7',
+            400: '#34D399',
+            500: '#10B981',
+            600: '#059669',
+            700: '#047857',
+            800: '#065F46',
+          },
+          // Redacción accent — amber (writing/ink/paper)
+          redac: {
+            50:  '#FFFBEB',
+            100: '#FEF3C7',
+            200: '#FDE68A',
+            300: '#FCD34D',
+            400: '#FBBF24',
+            500: '#F59E0B',
+            600: '#D97706',
+            700: '#B45309',
+          },
+          ink: {
+            900: '#0F1720',
+            800: '#1F2937',
+            700: '#374151',
+            600: '#4B5563',
+            500: '#6B7280',
+            400: '#9CA3AF',
+            300: '#D1D5DB',
+            200: '#E5E7EB',
+            100: '#F3F4F6',
+            50:  '#F9FAFB',
+          },
+        },
+      }
+    }
+  }
+</script>
+<style>
+  html { font-family: 'Nunito', system-ui, sans-serif; }
+  body { background: #EEF0F3; color: #0F1720; -webkit-font-smoothing: antialiased; }
+  /* Frame shadow for Figma-style screen presentation */
+  .frame-shadow {
+    box-shadow:
+      0 0 0 1px rgba(15, 23, 32, 0.06),
+      0 30px 60px -20px rgba(15, 23, 32, 0.22),
+      0 16px 30px -16px rgba(15, 23, 32, 0.14);
+  }
+  .screen-label {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  /* Dashed outline with proper spacing */
+  .dash-border {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%238B5CF6' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  .dash-border-amber {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23F59E0B' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  .dash-border-teal {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%2310B981' stroke-width='2' stroke-dasharray='6,5' stroke-dashoffset='0' stroke-linecap='round'/%3e%3c/svg%3e");
+    border-radius: 12px;
+  }
+  /* Inline correction styles */
+  .strike-red {
+    text-decoration: line-through;
+    text-decoration-color: #EF4444;
+    text-decoration-thickness: 2px;
+    color: #991B1B;
+    background: #FEF2F2;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .fix-green {
+    color: #065F46;
+    background: #D1FAE5;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .minor-amber {
+    color: #92400E;
+    border-bottom: 2px dotted #F59E0B;
+    padding-bottom: 1px;
+    background: #FFFBEB;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .sug-amber {
+    color: #B45309;
+    background: #FEF3C7;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .err-note {
+    font-style: italic;
+    color: #6B7280;
+    font-size: 0.8125rem;
+  }
+  /* Device frames */
+  .device-mobile {
+    width: 390px;
+    border-radius: 40px;
+    background: #0F1720;
+    padding: 10px;
+    box-shadow:
+      0 0 0 2px rgba(15, 23, 32, 0.12),
+      0 40px 70px -30px rgba(15, 23, 32, 0.4);
+  }
+  .device-mobile-inner {
+    border-radius: 32px;
+    overflow: hidden;
+    background: #F5F6F8;
+    height: 820px;
+    position: relative;
+  }
+  /* Notch */
+  .mobile-notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 24px; background: #0F1720; border-radius: 20px; z-index: 40;
+  }
+  /* Status bar */
+  .status-bar {
+    height: 44px; display:flex; align-items:center; justify-content:space-between;
+    padding: 0 28px; font-weight: 700; font-size: 14px; color: #0F1720;
+    padding-top: 14px;
+  }
+  /* scrollbar track for mock only */
+  .mock-scroll::-webkit-scrollbar { width: 8px; }
+  .mock-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+  .mock-scroll::-webkit-scrollbar-track { background: transparent; }
+  /* Caret blink for textarea */
+  .caret::after { content: '|'; color:#10B981; animation: blink 1s steps(2) infinite; font-weight: 400; margin-left: 1px; }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* Slight tile decorations */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(15,23,32,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,32,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- =================== 10 · COMPONENT STATES =================== -->
+<section class="max-w-[1440px] mx-auto px-8 pt-6 pb-16">
+  <div class="flex items-baseline gap-4 mb-6">
+    <span class="screen-label text-ink-400 font-bold text-xs">10 / COMPONENTS</span>
+    <h2 class="font-black text-2xl text-ink-900">Component states</h2>
+    <span class="text-ink-500 text-sm">All the little pieces your coding agent needs to wire up</span>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6">
+    <!-- Word count states -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Word count · 4 states</div>
+      <div class="space-y-4">
+        <div class="flex items-center gap-4 p-3 rounded-lg bg-ink-50">
+          <div class="w-20"><div class="font-black text-[22px] text-ink-400 tabular-nums">42</div></div>
+          <div class="text-ink-500 text-sm font-semibold tabular-nums">/ 180–220 palabras</div>
+          <div class="flex-1 h-1.5 rounded-full bg-ink-100"><div class="h-full rounded-full bg-ink-300" style="width: 20%"></div></div>
+          <div class="text-ink-500 text-xs font-bold">Debajo del mínimo</div>
+        </div>
+        <div class="flex items-center gap-4 p-3 rounded-lg bg-teal-50">
+          <div class="w-20"><div class="font-black text-[22px] text-teal-600 tabular-nums">196</div></div>
+          <div class="text-ink-500 text-sm font-semibold tabular-nums">/ 180–220 palabras</div>
+          <div class="flex-1 h-1.5 rounded-full bg-ink-100"><div class="h-full rounded-full bg-teal-500" style="width: 90%"></div></div>
+          <div class="text-teal-600 text-xs font-black">En rango ✓</div>
+        </div>
+        <div class="flex items-center gap-4 p-3 rounded-lg bg-redac-50">
+          <div class="w-20"><div class="font-black text-[22px] text-redac-600 tabular-nums">248</div></div>
+          <div class="text-ink-500 text-sm font-semibold tabular-nums">/ 180–220 palabras</div>
+          <div class="flex-1 h-1.5 rounded-full bg-ink-100"><div class="h-full rounded-full bg-redac-500" style="width: 100%"></div></div>
+          <div class="text-redac-700 text-xs font-black">Por encima (ok)</div>
+        </div>
+        <div class="flex items-center gap-4 p-3 rounded-lg bg-[#FEF2F2]">
+          <div class="w-20"><div class="font-black text-[22px] text-[#B91C1C] tabular-nums">412</div></div>
+          <div class="text-ink-500 text-sm font-semibold tabular-nums">/ 180–220 palabras</div>
+          <div class="flex-1 h-1.5 rounded-full bg-ink-100"><div class="h-full rounded-full bg-[#EF4444]" style="width: 100%"></div></div>
+          <div class="text-[#B91C1C] text-xs font-black">Muy por encima</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save indicator states -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Save indicator · 4 states</div>
+      <div class="space-y-3">
+        <div class="p-3 rounded-lg bg-ink-50 flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full border-2 border-ink-400 border-t-transparent animate-spin"></div>
+          <div class="text-ink-600 text-sm font-bold">Guardando…</div>
+          <div class="ml-auto text-ink-400 text-xs">during autosave in-flight</div>
+        </div>
+        <div class="p-3 rounded-lg bg-ink-50 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <div class="text-ink-600 text-sm font-bold">Guardado</div>
+          <div class="ml-auto text-ink-400 text-xs">success, idle</div>
+        </div>
+        <div class="p-3 rounded-lg bg-[#FEF2F2] flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="text-[#991B1B] text-sm font-bold">Error al guardar</div>
+          <button class="ml-auto text-teal-600 text-sm font-black hover:underline">Reintentar</button>
+        </div>
+        <div class="p-3 rounded-lg bg-redac-50 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.4" stroke-linecap="round"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <div class="text-redac-700 text-sm font-bold">Sin conexión · en cola</div>
+          <div class="ml-auto text-ink-400 text-xs">offline, will sync</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment types -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Correction segments · 3 kinds</div>
+      <div class="space-y-4 text-[16px] leading-[2]">
+        <div class="p-3 rounded-lg bg-ink-50">
+          <div class="text-[10px] font-black tracking-widest uppercase text-teal-700 mb-1">OK — plain text</div>
+          <div>Mi familia es pequeña pero muy especial.</div>
+        </div>
+        <div class="p-3 rounded-lg bg-[#FEF2F2]">
+          <div class="text-[10px] font-black tracking-widest uppercase text-[#991B1B] mb-1">MAJOR — strike + fix + parenthetical note</div>
+          <div><span class="strike-red">son</span> <span class="fix-green">es</span> <span class="err-note">(concordancia: "la familia" es singular)</span></div>
+        </div>
+        <div class="p-3 rounded-lg bg-redac-50">
+          <div class="text-[10px] font-black tracking-widest uppercase text-redac-700 mb-1">MINOR — dotted amber + bracketed suggestion</div>
+          <div><span class="minor-amber">muy simpática</span> <span class="err-note">[→ <span class="sug-amber">muy simpático</span>] (concordancia de género)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attempts stepper -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Attempts stepper · progression</div>
+      <div class="space-y-4">
+        <!-- Single attempt draft -->
+        <div>
+          <div class="text-[10px] font-black tracking-widest uppercase text-ink-500 mb-2">1 attempt · drafting</div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1 rounded-full bg-redac-50 border border-redac-200 text-xs font-black text-redac-700 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-redac-500 text-white grid place-items-center text-[10px]">1</span>
+              V1 · borrador
+            </button>
+          </div>
+        </div>
+        <!-- 1 corrected -->
+        <div>
+          <div class="text-[10px] font-black tracking-widest uppercase text-ink-500 mb-2">1 attempt · corrected</div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-xs font-black text-teal-700 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-teal-500 text-white grid place-items-center text-[10px]">✓</span>
+              V1 · corregida
+            </button>
+            <span class="text-ink-300">→</span>
+            <button class="px-3 py-1 rounded-full bg-white border border-dashed border-ink-300 text-xs font-bold text-ink-500">+ V2</button>
+          </div>
+        </div>
+        <!-- v1 corrected + v2 drafting -->
+        <div>
+          <div class="text-[10px] font-black tracking-widest uppercase text-ink-500 mb-2">2 attempts · v2 drafting</div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1 rounded-full bg-white border border-ink-200 text-xs font-bold text-ink-500 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-teal-500 text-white grid place-items-center text-[10px]">✓</span>
+              V1
+            </button>
+            <span class="text-ink-300">→</span>
+            <button class="px-3 py-1 rounded-full bg-redac-50 border border-redac-200 text-xs font-black text-redac-700 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-redac-500 text-white grid place-items-center text-[10px]">2</span>
+              V2 · borrador
+            </button>
+          </div>
+        </div>
+        <!-- 3 attempts max -->
+        <div>
+          <div class="text-[10px] font-black tracking-widest uppercase text-ink-500 mb-2">3 attempts · max reached</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="px-3 py-1 rounded-full bg-white border border-ink-200 text-xs font-bold text-ink-500 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-teal-500 text-white grid place-items-center text-[10px]">✓</span>
+              V1
+            </button>
+            <span class="text-ink-300">→</span>
+            <button class="px-3 py-1 rounded-full bg-white border border-ink-200 text-xs font-bold text-ink-500 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-teal-500 text-white grid place-items-center text-[10px]">✓</span>
+              V2
+            </button>
+            <span class="text-ink-300">→</span>
+            <button class="px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-xs font-black text-teal-700 flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-full bg-teal-500 text-white grid place-items-center text-[10px]">✓</span>
+              V3 · corregida
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Card · empty state</div>
+      <div class="rounded-2xl border border-ink-200 bg-white p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-6 h-6 rounded-md bg-redac-100 grid place-items-center"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg></div>
+          <div class="font-black text-ink-900">Redacción</div>
+        </div>
+        <div class="text-center py-5">
+          <div class="inline-grid place-items-center w-12 h-12 rounded-xl bg-redac-50 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+          </div>
+          <div class="text-ink-500 text-sm">Practica tu escritura con una tarea basada en esta lección.</div>
+        </div>
+        <button class="w-full h-11 dash-border-amber text-redac-700 font-bold text-sm flex items-center justify-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Generar redacción
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading states -->
+    <div class="bg-white rounded-2xl border border-ink-200 p-6">
+      <div class="text-redac-600 font-black text-xs tracking-widest uppercase mb-4">Loading · generation &amp; correction</div>
+      <div class="space-y-4">
+        <!-- Generation skeleton -->
+        <div class="rounded-xl border border-ink-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full border-2 border-redac-500 border-t-transparent animate-spin"></div>
+            <div class="text-redac-700 font-black text-xs tracking-widest uppercase">Generando tema…</div>
+          </div>
+          <div class="h-6 rounded-md bg-ink-100 w-3/4 mb-3"></div>
+          <div class="h-3 rounded bg-ink-100 w-full mb-2"></div>
+          <div class="h-3 rounded bg-ink-100 w-5/6 mb-2"></div>
+          <div class="h-3 rounded bg-ink-100 w-2/3"></div>
+        </div>
+        <!-- Correction skeleton -->
+        <div class="rounded-xl border border-ink-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
+            <div class="text-teal-700 font-black text-xs tracking-widest uppercase">Corrigiendo tu redacción…</div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="h-1.5 rounded-full bg-ink-100"></div>
+            <div class="h-1.5 rounded-full bg-ink-100"></div>
+            <div class="h-1.5 rounded-full bg-ink-100"></div>
+          </div>
+          <div class="h-3 rounded bg-ink-100 w-full mb-2"></div>
+          <div class="h-3 rounded bg-ink-100 w-4/5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</body>
+</html>
