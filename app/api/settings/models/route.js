@@ -28,14 +28,22 @@ export async function GET(req) {
     byFeature[r.feature] = r;
   }
 
-  // Fill defaults for missing features
+  // Fill defaults for missing features — respecting per-feature defaults
+  // declared in FEATURES[].defaultModelId, falling back to the global default.
   const result = {};
   for (const f of FEATURES) {
-    result[f.id] = byFeature[f.id] || {
+    if (byFeature[f.id]) {
+      result[f.id] = byFeature[f.id];
+      continue;
+    }
+    const fallback = f.defaultModelId
+      ? (MODEL_OPTIONS.find((m) => m.id === f.defaultModelId) || DEFAULT_MODEL)
+      : DEFAULT_MODEL;
+    result[f.id] = {
       feature: f.id,
-      model_id: DEFAULT_MODEL.id,
-      display_name: DEFAULT_MODEL.displayName,
-      provider: DEFAULT_MODEL.provider,
+      model_id: fallback.id,
+      display_name: fallback.displayName,
+      provider: fallback.provider,
     };
   }
 

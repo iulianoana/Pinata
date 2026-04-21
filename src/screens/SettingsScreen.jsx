@@ -158,6 +158,7 @@ export default function SettingsScreen() {
   const navigate = useNavigate();
   const [models, setModels] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [savedFeature, setSavedFeature] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -179,12 +180,18 @@ export default function SettingsScreen() {
     setSaving(feature);
 
     const headers = await getAuthHeaders();
-    await fetch("/api/settings/models", {
+    const res = await fetch("/api/settings/models", {
       method: "PUT",
       headers,
       body: JSON.stringify({ feature, model_id: modelId }),
     });
     setSaving(null);
+    if (res.ok) {
+      setSavedFeature(feature);
+      setTimeout(() => {
+        setSavedFeature((curr) => (curr === feature ? null : curr));
+      }, 1800);
+    }
   };
 
   const providerColor = (provider) =>
@@ -249,6 +256,33 @@ export default function SettingsScreen() {
                     fontSize: 15, fontWeight: 800, color: C.text,
                     fontFamily: "'Nunito', sans-serif",
                   }}>{feature.label}</span>
+                  <div style={{ flex: 1 }} />
+                  {saving === feature.id && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800, color: C.muted,
+                      fontFamily: "'Nunito', sans-serif",
+                      textTransform: "uppercase", letterSpacing: "0.05em",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}>
+                      <span style={{
+                        width: 10, height: 10, borderRadius: "50%",
+                        border: `2px solid ${C.border}`, borderTopColor: C.accent,
+                        display: "inline-block", animation: "gpdfSpin 1s linear infinite",
+                      }} />
+                      Guardando
+                    </span>
+                  )}
+                  {savedFeature === feature.id && saving !== feature.id && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800, color: "#059669",
+                      fontFamily: "'Nunito', sans-serif",
+                      textTransform: "uppercase", letterSpacing: "0.05em",
+                      display: "flex", alignItems: "center", gap: 4,
+                      background: "#D1FAE5", padding: "3px 8px", borderRadius: 999,
+                    }}>
+                      ✓ Guardado
+                    </span>
+                  )}
                 </div>
                 <p style={{
                   fontSize: 12, color: C.muted, fontFamily: "'Nunito', sans-serif",
