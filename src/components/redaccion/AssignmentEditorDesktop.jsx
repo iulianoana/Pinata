@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Check, Pencil, Sparkles } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -14,6 +14,16 @@ import CorrectionReview from "./CorrectionReview";
 import CorrectingOverlay from "./CorrectingOverlay";
 import { useEssayAutosave } from "../../lib/redaccion/use-essay-autosave";
 import { countWords } from "../../lib/redaccion/word-count";
+import { C } from "../../styles/theme";
+
+const PANEL_STORAGE_KEY = "pinata-redaccion-editor-width";
+const DEFAULT_EDITOR_PCT = 60;
+const MIN_EDITOR_W = 400;
+const MIN_BRIEF_W = 280;
+
+function getSavedEditorWidth() {
+  try { const v = localStorage.getItem(PANEL_STORAGE_KEY); return v ? Number(v) : null; } catch { return null; }
+}
 
 export default function AssignmentEditorDesktop({
   assignment,
@@ -36,6 +46,73 @@ export default function AssignmentEditorDesktop({
 
   const [essay, setEssay] = useState(attempt.essay || "");
   const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
+
+  // Resizable split between brief (left) and editor/review (right).
+  const bodyRef = useRef(null);
+  const [editorWidth, setEditorWidth] = useState(() => getSavedEditorWidth());
+  const [isResizing, setIsResizing] = useState(false);
+  const editorWidthRef = useRef(editorWidth);
+  useEffect(() => { editorWidthRef.current = editorWidth; }, [editorWidth]);
+
+  const getEffectiveWidth = useCallback(() => {
+    if (editorWidthRef.current) return editorWidthRef.current;
+    const bodyW = bodyRef.current?.offsetWidth;
+    if (bodyW) {
+      return Math.max(MIN_EDITOR_W, Math.min(Math.round(bodyW * DEFAULT_EDITOR_PCT / 100), bodyW - MIN_BRIEF_W));
+    }
+    return MIN_EDITOR_W;
+  }, []);
+
+  // After mount, measure the container and seed the default width if nothing is saved.
+  useLayoutEffect(() => {
+    if (editorWidthRef.current) return;
+    const bodyW = bodyRef.current?.offsetWidth;
+    if (!bodyW) return;
+    const w = Math.max(MIN_EDITOR_W, Math.min(Math.round(bodyW * DEFAULT_EDITOR_PCT / 100), bodyW - MIN_BRIEF_W));
+    setEditorWidth(w);
+  }, []);
+
+  // On window resize, clamp the saved width down if the window is now too narrow.
+  // Don't persist the clamped value — only user drags write to localStorage.
+  useEffect(() => {
+    const onResize = () => {
+      const bodyW = bodyRef.current?.offsetWidth;
+      const cur = editorWidthRef.current;
+      if (!bodyW || !cur) return;
+      const maxW = bodyW - MIN_BRIEF_W;
+      if (cur > maxW) setEditorWidth(Math.max(MIN_EDITOR_W, maxW));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const onResizeStart = useCallback((e) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+    const startX = e.clientX;
+    const startW = getEffectiveWidth();
+
+    const onMove = (ev) => {
+      const bodyW = bodyRef.current?.offsetWidth || 1;
+      let newW = startW + (startX - ev.clientX);
+      newW = Math.max(MIN_EDITOR_W, Math.min(newW, bodyW - MIN_BRIEF_W));
+      setEditorWidth(Math.round(newW));
+    };
+
+    const onUp = () => {
+      setIsResizing(false);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      try { localStorage.setItem(PANEL_STORAGE_KEY, String(editorWidthRef.current)); } catch {}
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [getEffectiveWidth]);
 
   // Autosave idles in non-editor views — value won't change (textarea readOnly),
   // and the hook short-circuits when value === lastSavedValue. Still mounted so
@@ -94,10 +171,10 @@ export default function AssignmentEditorDesktop({
         )}
       </div>
 
-      {/* 40 / 60 split */}
-      <div className="flex-1 grid min-h-0" style={{ gridTemplateColumns: "2fr 3fr" }}>
-        {/* Brief — left 40% */}
-        <div className="border-r border-[#E5E7EB] bg-[#FAFAF7] flex flex-col min-h-0">
+      {/* Resizable split: brief (flex) | editor/review (fixed px) */}
+      <div ref={bodyRef} className="flex-1 flex min-h-0">
+        {/* Brief — fills remaining space */}
+        <div className="border-r border-[#E5E7EB] bg-[#FAFAF7] flex flex-col min-h-0 flex-1 min-w-0">
           <div className="overflow-auto px-7 py-6 flex-1">
             <BriefView brief={brief} />
             {view === "editor" && (
@@ -116,8 +193,22 @@ export default function AssignmentEditorDesktop({
           </div>
         </div>
 
-        {/* Right column — editor or review */}
-        <div className="flex flex-col min-h-0 bg-white">
+        {/* Right column — editor or review, resizable */}
+        <div
+          className="relative flex flex-col min-h-0 bg-white shrink-0"
+          style={{ width: getEffectiveWidth() }}
+        >
+          {/* Resize drag handle — left edge (same pattern as LessonReader side panel) */}
+          <div
+            onMouseDown={onResizeStart}
+            style={{
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 6,
+              cursor: "col-resize", zIndex: 5, background: "transparent",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = C.border)}
+            onMouseLeave={(e) => { if (!isResizing) e.currentTarget.style.background = "transparent"; }}
+          />
+
           {view === "review" ? (
             <CorrectionReview correction={correction} onBack={onBack} variant="desktop" />
           ) : (
