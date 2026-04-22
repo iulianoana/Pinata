@@ -93,7 +93,7 @@ export default function AssignmentEditorMobile({
   // Review mode owns the whole body.
   if (view === "review") {
     return (
-      <div className="fixed inset-0 flex flex-col bg-white font-nunito" style={{ zIndex: 30 }}>
+      <div className="flex flex-col bg-white font-nunito" style={{ height: "100dvh" }}>
         <div
           className="px-4 pb-3 flex items-center gap-2 border-b border-[#E5E7EB] bg-white shrink-0"
           style={{ paddingTop: "max(12px, env(safe-area-inset-top, 12px))" }}
@@ -117,7 +117,7 @@ export default function AssignmentEditorMobile({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white font-nunito" style={{ zIndex: 30 }}>
+    <div className="flex flex-col bg-white font-nunito" style={{ height: "100dvh" }}>
       {/* Top bar */}
       <div
         className="px-4 pb-3 flex items-center gap-2 border-b border-[#E5E7EB] bg-white shrink-0"
@@ -255,7 +255,7 @@ function TareaView({ briefRef, initialScrollTop, brief, onRegenerate, regenerati
   return (
     <div
       ref={setRef}
-      className="flex-1 overflow-auto bg-[#FAFAF7]"
+      className="flex-1 min-h-0 overflow-auto bg-[#FAFAF7]"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))" }}
     >
       <div className="min-h-full flex flex-col px-5 pt-5">
