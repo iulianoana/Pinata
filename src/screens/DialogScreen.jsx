@@ -6,6 +6,7 @@ import { useChatHistory } from "../lib/useChatHistory";
 import { fetchCarolinaResources, fetchLesson } from "../lib/api";
 import { ResourcePicker, ResourcePills } from "../components/ResourcePicker";
 import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // Blue accent for orb & session UI
 const B = {
@@ -1141,292 +1142,220 @@ export default function DialogScreen({ session }) {
         </div>
       )}
 
-      {/* ============ HISTORY SHEET — bottom on mobile, right on desktop ============ */}
-      {showHistory && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            display: "flex",
-            flexDirection: isMobile ? "column" : "row",
-            justifyContent: "flex-end",
-          }}
-          onClick={() => { setShowHistory(false); setViewingSession(null); }}
+      {/* ============ HISTORY SHEET — right side on every viewport, matches Carolina chat history ============ */}
+      <Sheet
+        open={showHistory}
+        onOpenChange={(open) => {
+          setShowHistory(open);
+          if (!open) setViewingSession(null);
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md flex flex-col p-0"
+          style={{ background: C.card, fontFamily: "'Nunito', sans-serif" }}
         >
-          {/* Dimmed backdrop */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: C.overlay,
-              animation: "overlayFade 0.2s ease-out",
-            }}
-          />
-
-          {/* Sheet */}
-          <div
-            style={{
-              position: "relative",
-              background: C.card,
-              display: "flex",
-              flexDirection: "column",
-              ...(isMobile
-                ? {
-                    borderRadius: "20px 20px 0 0",
-                    maxHeight: viewingSession ? "100vh" : "70vh",
-                    height: viewingSession ? "100%" : "auto",
-                    animation: "sheetUp 0.3s ease-out",
-                  }
-                : {
-                    borderRadius: "20px 0 0 20px",
-                    width: 440,
-                    height: "100vh",
-                    maxHeight: "100vh",
-                    boxShadow: "-8px 0 24px rgba(0,0,0,0.08)",
-                    animation: "sheetSlideRight 0.3s ease-out",
-                  }),
-            }}
-            onClick={(e) => e.stopPropagation()}
+          <SheetHeader
+            className="px-5 pb-3 border-b"
+            style={{ borderColor: C.border, paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}
           >
-            {/* Sheet header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {viewingSession && (
+                <button
+                  onClick={() => setViewingSession(null)}
+                  aria-label="Back"
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: 4, display: "flex", alignItems: "center",
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
+              <SheetTitle style={{ flex: 1, fontSize: 18, fontWeight: 900, color: C.text, textAlign: "left", marginRight: 28 }}>
+                {viewingSession ? viewingSession.unit_name : "Past conversations"}
+              </SheetTitle>
+            </div>
+          </SheetHeader>
+
+          {/* Transcript meta line */}
+          {viewingSession && (
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "20px 20px 16px",
+                padding: "10px 20px",
+                textAlign: "center",
                 borderBottom: `1px solid ${C.border}`,
                 flexShrink: 0,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {viewingSession && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
+                {formatSessionDate(viewingSession.started_at)}
+                {" · "}
+                {Math.max(1, Math.round(viewingSession.duration_seconds / 60))} min
+                {" · "}
+                {viewingSession.turn_count} turns
+              </span>
+            </div>
+          )}
+
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+            {!viewingSession ? (
+              /* Session list */
+              <div style={{ padding: "8px 0" }}>
+                {historySessions.map((s) => (
                   <button
-                    onClick={() => setViewingSession(null)}
+                    key={s.id}
+                    onClick={() => handleViewSession(s.id)}
                     style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 4,
                       display: "flex",
                       alignItems: "center",
+                      gap: 14,
+                      width: "100%",
+                      padding: "14px 20px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontFamily: "'Nunito', sans-serif",
+                      transition: "background 0.15s",
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = C.bg; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={C.text}
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </button>
-                )}
-                <h2 style={{ fontSize: 18, fontWeight: 900, color: C.text }}>
-                  {viewingSession ? viewingSession.unit_name : "Past conversations"}
-                </h2>
-              </div>
-              <button
-                onClick={() => { setShowHistory(false); setViewingSession(null); }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: B.primary,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "4px 0",
-                }}
-              >
-                Close ✕
-              </button>
-            </div>
-
-            {/* Transcript meta line */}
-            {viewingSession && (
-              <div
-                style={{
-                  padding: "10px 20px",
-                  textAlign: "center",
-                  borderBottom: `1px solid ${C.border}`,
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
-                  {formatSessionDate(viewingSession.started_at)}
-                  {" · "}
-                  {Math.max(1, Math.round(viewingSession.duration_seconds / 60))} min
-                  {" · "}
-                  {viewingSession.turn_count} turns
-                </span>
-              </div>
-            )}
-
-            {/* Content */}
-            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-              {!viewingSession ? (
-                /* Session list */
-                <div style={{ padding: "8px 0" }}>
-                  {historySessions.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleViewSession(s.id)}
+                    {/* Chat icon */}
+                    <div
                       style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: B.light,
                         display: "flex",
                         alignItems: "center",
-                        gap: 14,
-                        width: "100%",
-                        padding: "14px 20px",
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        fontFamily: "'Nunito', sans-serif",
-                        transition: "background 0.15s",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = C.bg; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
-                      {/* Chat icon */}
-                      <div
+                      <ChatBubbleIcon size={18} color={B.primary} />
+                    </div>
+
+                    {/* Text */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
                         style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          background: B.light,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
+                          fontSize: 14,
+                          fontWeight: 800,
+                          color: C.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        <ChatBubbleIcon size={18} color={B.primary} />
-                      </div>
+                        {s.unit_name}
+                      </p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 2 }}>
+                        {formatSessionDate(s.started_at)}
+                        {" · "}
+                        {Math.max(1, Math.round(s.duration_seconds / 60))} min
+                        {" · "}
+                        {s.turn_count} turns
+                      </p>
+                    </div>
 
-                      {/* Text */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p
+                    {/* Chevron */}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={C.muted}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ flexShrink: 0 }}
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* Transcript view */
+              <div
+                style={{
+                  padding: "12px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                {(viewingSession.transcript || []).map((msg, i) => {
+                  const isUser = msg.role === "user";
+                  const transcript = viewingSession.transcript || [];
+                  const isFirstInSequence =
+                    i === 0 || transcript[i - 1].role !== msg.role;
+
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isUser ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      {!isUser && isFirstInSequence && (
+                        <span
                           style={{
-                            fontSize: 14,
-                            fontWeight: 800,
-                            color: C.text,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: C.muted,
+                            marginBottom: 4,
                           }}
                         >
-                          {s.unit_name}
-                        </p>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 2 }}>
-                          {formatSessionDate(s.started_at)}
-                          {" · "}
-                          {Math.max(1, Math.round(s.duration_seconds / 60))} min
-                          {" · "}
-                          {s.turn_count} turns
-                        </p>
-                      </div>
+                          Carolina
+                        </span>
+                      )}
 
-                      {/* Chevron */}
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={C.muted}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        style={{ flexShrink: 0 }}
-                      >
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                /* Transcript view */
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 12,
-                  }}
-                >
-                  {(viewingSession.transcript || []).map((msg, i) => {
-                    const isUser = msg.role === "user";
-                    const transcript = viewingSession.transcript || [];
-                    const isFirstInSequence =
-                      i === 0 || transcript[i - 1].role !== msg.role;
-
-                    return (
                       <div
-                        key={i}
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: isUser ? "flex-end" : "flex-start",
+                          maxWidth: "80%",
+                          padding: "10px 14px",
+                          borderRadius: 16,
+                          background: isUser ? C.accent : "#F1F3F4",
+                          color: isUser ? "#fff" : C.text,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          lineHeight: 1.5,
+                          borderBottomRightRadius: isUser ? 4 : 16,
+                          borderBottomLeftRadius: isUser ? 16 : 4,
                         }}
                       >
-                        {!isUser && isFirstInSequence && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: C.muted,
-                              marginBottom: 4,
-                            }}
-                          >
-                            Carolina
-                          </span>
-                        )}
+                        {msg.text}
+                      </div>
 
-                        <div
+                      {isUser && isFirstInSequence && (
+                        <span
                           style={{
-                            maxWidth: "80%",
-                            padding: "10px 14px",
-                            borderRadius: 16,
-                            background: isUser ? C.accent : "#F1F3F4",
-                            color: isUser ? "#fff" : C.text,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            lineHeight: 1.5,
-                            borderBottomRightRadius: isUser ? 4 : 16,
-                            borderBottomLeftRadius: isUser ? 16 : 4,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: C.muted,
+                            marginTop: 4,
                           }}
                         >
-                          {msg.text}
-                        </div>
-
-                        {isUser && isFirstInSequence && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: C.muted,
-                              marginTop: 4,
-                            }}
-                          >
-                            Iulian
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                          Iulian
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
 
       {/* Animations */}
       <style>{`
