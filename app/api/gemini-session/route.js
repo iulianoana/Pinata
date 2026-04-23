@@ -33,7 +33,10 @@ export async function POST(req) {
 
     return Response.json({
       apiKey,
-      model: "gemini-2.5-flash-native-audio-preview-12-2025",
+      // The 12-2025 native-audio preview has a documented regression that closes
+      // the WebSocket with 1008 "Operation is not implemented, or supported, or
+      // enabled" mid-session. Pinned to the 09-2025 build until Google ships a fix.
+      model: "gemini-2.5-flash-native-audio-preview-09-2025",
       systemInstruction,
     });
   } catch (e) {
