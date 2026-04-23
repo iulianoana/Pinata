@@ -472,7 +472,7 @@ export default function DialogScreen({ session }) {
                   Chat in turns
                 </p>
                 <p style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 2 }}>
-                  No 1.5s silence cutoffs
+                  Take turns when speaking
                 </p>
               </div>
               <Switch
