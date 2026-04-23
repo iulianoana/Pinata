@@ -5,6 +5,7 @@ import { useInstantMode } from "../lib/useInstantMode";
 import { useChatHistory } from "../lib/useChatHistory";
 import { fetchCarolinaResources, fetchLesson } from "../lib/api";
 import { ResourcePicker, ResourcePills } from "../components/ResourcePicker";
+import { Switch } from "@/components/ui/switch";
 
 // Blue accent for orb & session UI
 const B = {
@@ -13,6 +14,14 @@ const B = {
   dark: "#1A73E8",
   ring: "rgba(66, 133, 244, 0.12)",
 };
+
+// Green accent for the user's turn in chat-in-turns mode
+const G = {
+  primary: "#34A853",
+  ring: "rgba(52, 168, 83, 0.12)",
+};
+
+const CHAT_IN_TURNS_KEY = "pinata.carolina.chatInTurns";
 
 const formatTime = (s) =>
   `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -48,6 +57,14 @@ export default function DialogScreen({ session }) {
   const [historySessions, setHistorySessions] = useState([]);
   const [viewingSession, setViewingSession] = useState(null);
   const [historyCount, setHistoryCount] = useState(0);
+
+  // Chat-in-turns toggle (pre-call). Persisted per-device. Snapshotted at startSession.
+  const [chatInTurns, setChatInTurns] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const v = window.localStorage.getItem(CHAT_IN_TURNS_KEY);
+    return v === null ? true : v === "true";
+  });
+  const [activeTurnMode, setActiveTurnMode] = useState(false);
 
   const instant = useInstantMode();
   const chatHistory = useChatHistory();
@@ -109,6 +126,7 @@ export default function DialogScreen({ session }) {
   useEffect(() => {
     if (!instant.isSessionActive && !instant.isConnecting) {
       lastSavedLenRef.current = 0;
+      setActiveTurnMode(false);
     }
   }, [instant.isSessionActive, instant.isConnecting]);
 
@@ -161,7 +179,15 @@ export default function DialogScreen({ session }) {
     if (userId) {
       await chatHistory.startChatSession(userId, displayName, attachedResources);
     }
-    instant.startSession(unitContext);
+    setActiveTurnMode(chatInTurns);
+    instant.startSession(unitContext, { turnMode: chatInTurns });
+  };
+
+  const handleToggleChatInTurns = (next) => {
+    setChatInTurns(next);
+    try {
+      window.localStorage.setItem(CHAT_IN_TURNS_KEY, String(next));
+    } catch {}
   };
 
   const handleEndCall = () => {
@@ -195,6 +221,14 @@ export default function DialogScreen({ session }) {
   const isPreCall = !instant.isSessionActive && !instant.isConnecting;
   const isConnecting = !instant.isSessionActive && instant.isConnecting;
   const isActive = instant.isSessionActive;
+
+  // Turn-mode derived state — only meaningful while a turn-mode session is active.
+  const isUserTurn = activeTurnMode && !instant.isAISpeaking && !instant.isMuted;
+  const accentPrimary = isUserTurn ? G.primary : B.primary;
+  const accentRing = isUserTurn ? G.ring : B.ring;
+  const accentSoft = isUserTurn
+    ? "rgba(52,168,83,0.05)"
+    : "rgba(66,133,244,0.05)";
 
   return (
     <div
@@ -392,6 +426,62 @@ export default function DialogScreen({ session }) {
               )}
             </div>
 
+            {/* Chat-in-turns toggle */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => handleToggleChatInTurns(!chatInTurns)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleToggleChatInTurns(!chatInTurns);
+                }
+              }}
+              style={{
+                marginTop: 16,
+                width: "100%",
+                maxWidth: 320,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 14px",
+                borderRadius: 14,
+                border: `1px solid ${C.border}`,
+                background: C.card,
+                cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: G.ring,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <TurnsIcon size={18} color={G.primary} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
+                  Chat in turns
+                </p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginTop: 2 }}>
+                  No 1.5s silence cutoffs
+                </p>
+              </div>
+              <Switch
+                checked={chatInTurns}
+                onCheckedChange={handleToggleChatInTurns}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Chat in turns"
+              />
+            </div>
+
           </div>
 
           {/* Call button + history shortcut */}
@@ -551,9 +641,10 @@ export default function DialogScreen({ session }) {
                       width: 152,
                       height: 152,
                       borderRadius: "50%",
-                      border: `2px solid ${B.primary}`,
+                      border: `2px solid ${accentPrimary}`,
                       opacity: 0,
                       animation: `ringExpand 2.4s ${i * 0.8}s infinite ease-out`,
+                      transition: "border-color 0.3s",
                     }}
                   />
                 ))}
@@ -568,11 +659,11 @@ export default function DialogScreen({ session }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: showTranscript && isMobile ? "none" : `0 0 0 12px ${B.ring}, 0 0 0 24px rgba(66,133,244,0.05)`,
+                  boxShadow: showTranscript && isMobile ? "none" : `0 0 0 12px ${accentRing}, 0 0 0 24px ${accentSoft}`,
                   animation: instant.isAISpeaking
                     ? "none"
                     : "orbPulse 3s infinite ease-in-out",
-                  transition: "all 0.3s",
+                  transition: "box-shadow 0.3s",
                   zIndex: 1,
                 }}
               >
@@ -618,26 +709,42 @@ export default function DialogScreen({ session }) {
               style={{
                 fontSize: showTranscript && isMobile ? 16 : 20,
                 fontWeight: 800,
-                color: instant.isAISpeaking ? B.primary : C.text,
+                color: instant.isAISpeaking
+                  ? B.primary
+                  : isUserTurn
+                    ? G.primary
+                    : C.text,
                 marginBottom: showTranscript && isMobile ? 0 : 4,
-                transition: "all 0.2s",
+                transition: "color 0.2s",
               }}
             >
-              {instant.isMuted && !instant.isAISpeaking
-                ? "Your mic is off"
-                : instant.isAISpeaking
+              {activeTurnMode
+                ? instant.isAISpeaking
                   ? "Carolina is speaking..."
-                  : "Listening..."}
+                  : isUserTurn
+                    ? "Your turn"
+                    : "Your mic is off"
+                : instant.isMuted && !instant.isAISpeaking
+                  ? "Your mic is off"
+                  : instant.isAISpeaking
+                    ? "Carolina is speaking..."
+                    : "Listening..."}
             </p>
             {!(showTranscript && isMobile) && (
               <p style={{ fontSize: 14, fontWeight: 600, color: C.muted }}>
-                {instant.isMuted
+                {activeTurnMode
                   ? instant.isAISpeaking
-                    ? "Won't interrupt"
-                    : "Tap mic to talk"
-                  : instant.isAISpeaking
-                    ? "Interrupt anytime"
-                    : "Just speak naturally"}
+                    ? "Your turn is next"
+                    : isUserTurn
+                      ? "Speak freely — tap ✓ when done"
+                      : "Tap mic to talk"
+                  : instant.isMuted
+                    ? instant.isAISpeaking
+                      ? "Won't interrupt"
+                      : "Tap mic to talk"
+                    : instant.isAISpeaking
+                      ? "Interrupt anytime"
+                      : "Just speak naturally"}
               </p>
             )}
           </div>
@@ -841,6 +948,39 @@ export default function DialogScreen({ session }) {
                   </span>
                 )}
               </button>
+            )}
+
+            {/* Done speaking pill — only in turn mode, only on user's turn */}
+            {isUserTurn && (
+              <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
+                <button
+                  onClick={instant.endTurn}
+                  aria-label="Done speaking"
+                  style={{
+                    minWidth: 220,
+                    padding: "14px 28px",
+                    borderRadius: 999,
+                    border: "none",
+                    cursor: "pointer",
+                    background: G.primary,
+                    color: "#fff",
+                    fontSize: 16,
+                    fontWeight: 800,
+                    fontFamily: "'Nunito', sans-serif",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    boxShadow: "0 6px 20px rgba(52,168,83,0.35)",
+                    transition: "transform 0.1s, box-shadow 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 8px 24px rgba(52,168,83,0.45)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 6px 20px rgba(52,168,83,0.35)"; }}
+                >
+                  <CheckCircleIcon size={20} color="#fff" />
+                  Done speaking
+                </button>
+              </div>
             )}
 
             <div
@@ -1434,6 +1574,44 @@ function ClockIcon({ size = 14, color = "#4285F4" }) {
     >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function TurnsIcon({ size = 18, color = "#34A853" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ size = 20, color = "#fff" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   );
 }

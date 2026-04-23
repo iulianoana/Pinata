@@ -98,6 +98,8 @@ export function useInstantMode() {
   const isSpeakingRef = useRef(false);
   const silenceTimerRef = useRef(null);
   const isMutedRef = useRef(false);
+  const turnModeRef = useRef(false);
+  const activityStartedRef = useRef(false);
 
   const clearPlayback = () => {
     for (const s of activeSourcesRef.current) {
@@ -152,6 +154,8 @@ export function useInstantMode() {
     aiRespondingRef.current = false;
     isSpeakingRef.current = false;
     isMutedRef.current = false;
+    turnModeRef.current = false;
+    activityStartedRef.current = false;
     setIsConnecting(false);
     setIsSessionActive(false);
     setIsAISpeaking(false);
@@ -264,6 +268,14 @@ export function useInstantMode() {
       if (modelTurn?.parts) {
         aiRespondingRef.current = true;
         setIsAISpeaking(true);
+        // Close out any in-progress user transcript bubble — Carolina is replying now.
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "user" && !last.done) {
+            return [...prev.slice(0, -1), { ...last, done: true }];
+          }
+          return prev;
+        });
         for (const part of modelTurn.parts) {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
@@ -286,6 +298,22 @@ export function useInstantMode() {
         });
       }
 
+      // Input audio transcription (turn mode: Gemini transcribes the user's speech)
+      const inputText = msg.serverContent.inputTranscription?.text;
+      if (inputText) {
+        setTranscript((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "user" && !last.done) {
+            return [
+              ...prev.slice(0, -1),
+              { ...last, text: last.text + inputText },
+            ];
+          }
+          return [...prev, { role: "user", text: inputText }];
+        });
+      }
+
+
       // generationComplete marks the end of one model utterance
       if (generationComplete) {
         setTranscript((prev) => {
@@ -304,6 +332,14 @@ export function useInstantMode() {
         if (isMutedRef.current) {
           isMutedRef.current = false;
           setIsMuted(false);
+        }
+        // Turn mode: signal the start of the user's turn.
+        if (turnModeRef.current && !activityStartedRef.current) {
+          const wsAs = wsRef.current;
+          if (wsAs && wsAs.readyState === WebSocket.OPEN) {
+            wsAs.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+            activityStartedRef.current = true;
+          }
         }
       }
 
@@ -328,6 +364,37 @@ export function useInstantMode() {
     const sendPCM = (buffer) => {
       // While muted: ignore mic entirely (no buffering, no interrupt)
       if (isMutedRef.current) return;
+
+      // --- Turn mode: stream audio straight to Gemini, skip Deepgram. ---
+      // Uses the Live API's button-controlled mode: activityStart was sent on
+      // unmute, audio chunks stream as `realtimeInput.audio`, and endTurn
+      // sends activityEnd. Server VAD is disabled (see setup).
+      if (turnModeRef.current) {
+        // Track whether the user actually spoke (drives the empty-pass branch in endTurn)
+        const int16Tm = new Int16Array(buffer);
+        let sumSqTm = 0;
+        for (let i = 0; i < int16Tm.length; i++) {
+          const s = int16Tm[i] / 32768;
+          sumSqTm += s * s;
+        }
+        const rmsTm = Math.sqrt(sumSqTm / int16Tm.length);
+        if (rmsTm >= MIC_GATE.idleThreshold) isSpeakingRef.current = true;
+
+        const wsTm = wsRef.current;
+        if (wsTm && wsTm.readyState === WebSocket.OPEN && activityStartedRef.current) {
+          wsTm.send(
+            JSON.stringify({
+              realtimeInput: {
+                audio: {
+                  mimeType: "audio/pcm;rate=16000",
+                  data: arrayBufferToBase64(buffer),
+                },
+              },
+            })
+          );
+        }
+        return;
+      }
 
       // --- Local VAD: detect speech, buffer audio, detect silence ---
       const int16 = new Int16Array(buffer);
@@ -360,7 +427,7 @@ export function useInstantMode() {
           silenceTimerRef.current = null;
         }
       } else if (isSpeakingRef.current) {
-        // Was speaking, now quiet — start silence countdown
+        // Was speaking, now quiet — start silence countdown.
         if (!silenceTimerRef.current) {
           silenceTimerRef.current = setTimeout(() => {
             isSpeakingRef.current = false;
@@ -414,9 +481,10 @@ export function useInstantMode() {
     }
   };
 
-  const startSession = async (unitContext) => {
+  const startSession = async (unitContext, options = {}) => {
     // Sync guard: prevents multiple concurrent startSession calls
     if (connectingRef.current || wsRef.current) return;
+    const turnMode = !!options.turnMode;
     connectingRef.current = true;
     setupDoneRef.current = false;
     setIsConnecting(true);
@@ -427,8 +495,10 @@ export function useInstantMode() {
     userAudioBufferRef.current = [];
     aiRespondingRef.current = false;
     isSpeakingRef.current = false;
-    isMutedRef.current = false;
-    setIsMuted(false);
+    turnModeRef.current = turnMode;
+    // In turn mode, user is muted while Carolina greets; auto-unmutes on her turnComplete.
+    isMutedRef.current = turnMode;
+    setIsMuted(turnMode);
     try {
       // Read from localStorage — supabase.auth.getSession() blocks up to 30s offline.
       const authSession = getCachedSession();
@@ -464,31 +534,43 @@ export function useInstantMode() {
       micStreamRef.current = micStream;
 
       // WebSocket
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${config.apiKey}`;
+      // Live API: v1alpha is required for the newer fields used in turn mode
+      // (realtimeInput.audio singular blob, activityStart/activityEnd, and
+      // realtimeInputConfig.automaticActivityDetection). v1beta accepts the
+      // older mediaChunks-array shape only.
+      const wsApiVersion = turnMode ? "v1alpha" : "v1beta";
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${wsApiVersion}.GenerativeService.BidiGenerateContent?key=${config.apiKey}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         console.log("[Gemini] WebSocket opened, sending setup...");
-        ws.send(
-          JSON.stringify({
-            setup: {
-              model: `models/${config.model}`,
-              generationConfig: {
-                responseModalities: ["AUDIO"],
-                speechConfig: {
-                  voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName: "Aoede" },
-                  },
+        const setupMsg = {
+          setup: {
+            model: `models/${config.model}`,
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: "Aoede" },
                 },
               },
-              systemInstruction: {
-                parts: [{ text: config.systemInstruction }],
-              },
-              outputAudioTranscription: {},
             },
-          })
-        );
+            systemInstruction: {
+              parts: [{ text: config.systemInstruction }],
+            },
+            outputAudioTranscription: {},
+          },
+        };
+        // Turn mode: button-controlled turn end. Disable server VAD and enable
+        // input audio transcription so the user's words appear in the UI.
+        if (turnMode) {
+          setupMsg.setup.realtimeInputConfig = {
+            automaticActivityDetection: { disabled: true },
+          };
+          setupMsg.setup.inputAudioTranscription = {};
+        }
+        ws.send(JSON.stringify(setupMsg));
       };
 
       ws.onmessage = async (event) => {
@@ -594,6 +676,46 @@ export function useInstantMode() {
     }
   };
 
+  // Turn mode: explicitly end the user's turn. Audio has been streaming straight
+  // to Gemini in sendPCM, so all we do here is mute the mic and send the
+  // Live API's `activityEnd` signal — no Deepgram, no STT round-trip. If the
+  // user pressed Done without speaking, send a "pass" text turn instead so
+  // Carolina keeps the conversation going.
+  const endTurn = () => {
+    if (isMutedRef.current) return;
+
+    isMutedRef.current = true;
+    setIsMuted(true);
+
+    const hadAudio = isSpeakingRef.current;
+    isSpeakingRef.current = false;
+    activityStartedRef.current = false;
+
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    if (hadAudio) {
+      ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
+    } else {
+      ws.send(
+        JSON.stringify({
+          clientContent: {
+            turns: [
+              {
+                parts: [
+                  {
+                    text: "(El usuario no dijo nada. Continúa la conversación con una pregunta o un comentario breve.)",
+                  },
+                ],
+              },
+            ],
+            turnComplete: true,
+          },
+        })
+      );
+    }
+  };
+
   useEffect(() => () => cleanup(), []);
 
   return {
@@ -607,6 +729,7 @@ export function useInstantMode() {
     startSession,
     endSession,
     toggleMute,
+    endTurn,
     clearError,
   };
 }
