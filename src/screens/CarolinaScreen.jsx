@@ -5,6 +5,7 @@ import { supabase, getCachedSession } from "../lib/supabase.js";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ResourcePills, ResourcePicker, resolveResourceLabels } from "../components/ResourcePicker";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
 // ─── Carolina palette ──────────────────────────────────────────
 const K = {
@@ -213,7 +214,7 @@ function MessageBubble({ message, isStreaming }) {
 }
 
 // ─── Header ────────────────────────────────────────────────────
-function CarolinaHeader({ activeSessionId, title, mode, resources, starred, onToggleStar, onCallClick, onHistoryClick, isMobile }) {
+function CarolinaHeader({ activeSessionId, title, mode, resources, starred, onToggleStar, onCallClick, onHistoryClick }) {
   const navigate = useNavigate();
   const modeObj = mode ? MODES.find((m) => m.id === mode) : null;
   const resourceSummary =
@@ -298,20 +299,21 @@ function CarolinaHeader({ activeSessionId, title, mode, resources, starred, onTo
           </button>
         )}
 
-        {/* History button (mobile only) */}
-        {isMobile && (
-          <button
-            onClick={onHistoryClick}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              padding: 6, color: C.muted, display: "flex",
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-            </svg>
-          </button>
-        )}
+        {/* History button */}
+        <button
+          onClick={onHistoryClick}
+          aria-label="Conversation history"
+          style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "transparent", border: `1.5px solid ${K.bubbleBorder}`,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            color: C.muted, flexShrink: 0,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+          </svg>
+        </button>
 
         {/* Call button */}
         <button
@@ -487,14 +489,14 @@ function ChatInput({ value, onChange, onSend, onAttach, disabled, isMobile }) {
   );
 }
 
-// ─── Conversations Overlay (Mobile) ─────────────────────────────
-function ConversationsOverlay({ isOpen, onClose, onSelectSession, onNewChat, availableResources }) {
+// ─── Carolina History Sheet (right-side, mobile + desktop) ──────
+function CarolinaHistorySheet({ open, onOpenChange, onSelectSession, onNewChat, availableResources }) {
   const [sessions, setSessions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open) return;
     setSearchQuery("");
     (async () => {
       try {
@@ -503,7 +505,7 @@ function ConversationsOverlay({ isOpen, onClose, onSelectSession, onNewChat, ava
         if (res.ok) setSessions(await res.json());
       } catch {}
     })();
-  }, [isOpen]);
+  }, [open]);
 
   // Debounced search
   useEffect(() => {
@@ -533,10 +535,10 @@ function ConversationsOverlay({ isOpen, onClose, onSelectSession, onNewChat, ava
     return () => clearTimeout(timeout);
   }, [searchQuery]);
 
-  if (!isOpen) return null;
-
   const starredSessions = sessions.filter((s) => s.starred);
   const recentSessions = sessions.filter((s) => !s.starred);
+
+  const close = () => onOpenChange(false);
 
   const getResourceLabels = (resources) => {
     if (!resources?.length || !availableResources?.length) return [];
@@ -552,7 +554,7 @@ function ConversationsOverlay({ isOpen, onClose, onSelectSession, onNewChat, ava
   const renderCard = (session) => (
     <button
       key={session.id}
-      onClick={() => { onSelectSession(session.id); onClose(); }}
+      onClick={() => { onSelectSession(session.id); close(); }}
       style={{
         width: "100%", background: "#FFFFFF", borderRadius: 12,
         border: `0.5px solid ${K.bubbleBorder}`, padding: "14px 16px",
@@ -611,137 +613,131 @@ function ConversationsOverlay({ isOpen, onClose, onSelectSession, onNewChat, ava
   );
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
-      background: K.bg, display: "flex", flexDirection: "column",
-      fontFamily: "'Nunito', sans-serif",
-      animation: "sheetUp 0.3s ease-out both",
-    }}>
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "12px 16px",
-        paddingTop: "max(12px, env(safe-area-inset-top, 12px))",
-        background: "#FFFFFF", borderBottom: `0.5px solid ${K.bubbleBorder}`,
-        flexShrink: 0,
-      }}>
-        <button onClick={onClose} style={{
-          background: "none", border: "none", cursor: "pointer",
-          padding: 4, color: C.text, display: "flex",
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <span style={{ flex: 1, fontSize: 17, fontWeight: 800, color: C.text }}>
-          Conversations
-        </span>
-        <button onClick={() => { onNewChat(); onClose(); }} style={{
-          width: 32, height: 32, borderRadius: "50%",
-          background: K.primary, border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-      </div>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md flex flex-col p-0"
+        style={{ background: K.bg, fontFamily: "'Nunito', sans-serif" }}
+      >
+        {/* Header */}
+        <SheetHeader className="px-4 pt-4 pb-3 bg-white border-b" style={{ borderColor: K.bubbleBorder }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <SheetTitle style={{ flex: 1, fontSize: 17, fontWeight: 800, color: C.text, textAlign: "left" }}>
+              Conversations
+            </SheetTitle>
+            <button
+              onClick={() => { onNewChat(); close(); }}
+              aria-label="New chat"
+              style={{
+                width: 32, height: 32, borderRadius: "50%",
+                background: K.primary, border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginRight: 28,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+        </SheetHeader>
 
-      {/* Search bar */}
-      <div style={{ padding: "12px 16px", flexShrink: 0 }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#FFFFFF", borderRadius: 10, padding: "10px 14px",
-          border: `1px solid ${C.border}`,
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search conversations..."
-            style={{
-              flex: 1, background: "transparent", border: "none", outline: "none",
-              fontSize: 14, fontFamily: "'Nunito', sans-serif", fontWeight: 600,
-              color: C.text,
-            }}
-          />
+        {/* Search bar */}
+        <div style={{ padding: "12px 16px", flexShrink: 0 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "#FFFFFF", borderRadius: 10, padding: "10px 14px",
+            border: `1px solid ${C.border}`,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search conversations..."
+              style={{
+                flex: 1, background: "transparent", border: "none", outline: "none",
+                fontSize: 14, fontFamily: "'Nunito', sans-serif", fontWeight: 600,
+                color: C.text,
+              }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 16px" }}>
-        {searchQuery.trim() ? (
-          searchResults.length > 0 ? (
-            searchResults.map((r) => (
-              <button
-                key={r.sessionId}
-                onClick={() => { onSelectSession(r.sessionId); onClose(); }}
-                style={{
-                  width: "100%", background: "#FFFFFF", borderRadius: 12,
-                  border: `0.5px solid ${K.bubbleBorder}`, padding: "14px 16px",
-                  cursor: "pointer", textAlign: "left", marginBottom: 10,
-                  fontFamily: "'Nunito', sans-serif",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.text }}>
-                    {r.title || "Untitled"}
-                  </span>
-                  {r.mode && (
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, color: K.correctionText,
-                      padding: "2px 8px", borderRadius: 6,
-                      background: K.activeBg, flexShrink: 0,
-                    }}>
-                      {MODE_LABELS[r.mode] || r.mode}
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 16px", minHeight: 0 }}>
+          {searchQuery.trim() ? (
+            searchResults.length > 0 ? (
+              searchResults.map((r) => (
+                <button
+                  key={r.sessionId}
+                  onClick={() => { onSelectSession(r.sessionId); close(); }}
+                  style={{
+                    width: "100%", background: "#FFFFFF", borderRadius: 12,
+                    border: `0.5px solid ${K.bubbleBorder}`, padding: "14px 16px",
+                    cursor: "pointer", textAlign: "left", marginBottom: 10,
+                    fontFamily: "'Nunito', sans-serif",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.text }}>
+                      {r.title || "Untitled"}
                     </span>
-                  )}
-                </div>
-                <div style={{
-                  fontSize: 11, color: C.muted, fontWeight: 500,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                  {r.snippet}
-                </div>
-              </button>
-            ))
+                    {r.mode && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: K.correctionText,
+                        padding: "2px 8px", borderRadius: 6,
+                        background: K.activeBg, flexShrink: 0,
+                      }}>
+                        {MODE_LABELS[r.mode] || r.mode}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize: 11, color: C.muted, fontWeight: 500,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {r.snippet}
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div style={{ textAlign: "center", padding: 32, color: C.muted, fontSize: 14, fontWeight: 600 }}>
+                No results found
+              </div>
+            )
           ) : (
-            <div style={{ textAlign: "center", padding: 32, color: C.muted, fontSize: 14, fontWeight: 600 }}>
-              No results found
-            </div>
-          )
-        ) : (
-          <>
-            {starredSessions.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+            <>
+              {starredSessions.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 800, color: C.muted,
+                    textTransform: "uppercase", letterSpacing: "0.08em",
+                    padding: "8px 0 6px",
+                  }}>Starred</div>
+                  {starredSessions.map(renderCard)}
+                </div>
+              )}
+              <div>
                 <div style={{
                   fontSize: 11, fontWeight: 800, color: C.muted,
                   textTransform: "uppercase", letterSpacing: "0.08em",
                   padding: "8px 0 6px",
-                }}>Starred</div>
-                {starredSessions.map(renderCard)}
+                }}>Recent</div>
+                {recentSessions.length > 0 ? (
+                  recentSessions.map(renderCard)
+                ) : (
+                  <div style={{ textAlign: "center", padding: 32, color: C.muted, fontSize: 14, fontWeight: 600 }}>
+                    No conversations yet
+                  </div>
+                )}
               </div>
-            )}
-            <div>
-              <div style={{
-                fontSize: 11, fontWeight: 800, color: C.muted,
-                textTransform: "uppercase", letterSpacing: "0.08em",
-                padding: "8px 0 6px",
-              }}>Recent</div>
-              {recentSessions.length > 0 ? (
-                recentSessions.map(renderCard)
-              ) : (
-                <div style={{ textAlign: "center", padding: 32, color: C.muted, fontSize: 14, fontWeight: 600 }}>
-                  No conversations yet
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -779,6 +775,13 @@ export default function CarolinaScreen({ session }) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Listen for 'Carolina Chat' clicked in sidebar while already on /carolina
+  useEffect(() => {
+    const handler = () => handleNewChat();
+    window.addEventListener("carolina-reset", handler);
+    return () => window.removeEventListener("carolina-reset", handler);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load/reset session based on URL param changes
   const sessionParam = searchParams.get("session");
@@ -873,49 +876,21 @@ export default function CarolinaScreen({ session }) {
     setIsLoadingHistory(false);
   };
 
-  // ─── Select mode → create session + opening message ────────
-  const handleSelectMode = async (selectedMode) => {
-    try {
-      const headers = await getAuthHeaders();
-      const currentResources = Object.entries(selectedResourceIds).map(
-        ([id, label]) => ({ type: "lesson", id, label })
-      );
+  // ─── Select mode → show opening locally, defer session creation until first send ────
+  const handleSelectMode = (selectedMode) => {
+    const currentResources = Object.entries(selectedResourceIds).map(
+      ([id, label]) => ({ type: "lesson", id, label })
+    );
 
-      const res = await fetch("/api/carolina/sessions", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          mode: selectedMode,
-          resources: currentResources.map((r) => ({ type: r.type, id: r.id })),
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to create session");
-      const newSession = await res.json();
-
-      setActiveSessionId(newSession.id);
-      setMode(selectedMode);
-      setResources(currentResources);
-
-      const openingMsg = {
-        id: "opening-" + Date.now(),
-        role: "assistant",
-        content: OPENING_MESSAGES[selectedMode],
-        createdAt: new Date().toISOString(),
-      };
-      setMessages([openingMsg]);
-
-      // Save opening message to DB so Claude has context
-      await supabase.from("chat_messages").insert({
-        session_id: newSession.id,
-        role: "assistant",
-        content: OPENING_MESSAGES[selectedMode],
-      });
-
-      setSearchParams({ session: newSession.id });
-      window.dispatchEvent(new CustomEvent("carolina-sessions-changed"));
-    } catch (err) {
-      console.error("Failed to create session:", err);
-    }
+    setMode(selectedMode);
+    setResources(currentResources);
+    setMessages([{
+      id: "opening-" + Date.now(),
+      role: "assistant",
+      content: OPENING_MESSAGES[selectedMode],
+      createdAt: new Date().toISOString(),
+    }]);
+    setActiveSessionId("pending");
   };
 
   // ─── Star toggle ─────────────────────────────────────────
@@ -930,7 +905,6 @@ export default function CarolinaScreen({ session }) {
         headers,
         body: JSON.stringify({ id: activeSessionId, starred: newStarred }),
       });
-      window.dispatchEvent(new CustomEvent("carolina-sessions-changed"));
     } catch {
       setStarred(!newStarred);
     }
@@ -971,10 +945,16 @@ export default function CarolinaScreen({ session }) {
 
     // If no session yet, switch to chat view immediately
     const hadSession = !!activeSessionId && activeSessionId !== "pending";
+    const effectiveMode = mode || "conversation";
     if (!hadSession) {
       setActiveSessionId("pending");
-      setMode("conversation");
+      if (!mode) setMode(effectiveMode);
     }
+
+    // If the opening message was shown locally (mode card click), send it to the server
+    // so Claude has it in context and it gets persisted as the session's first turn.
+    const hasLocalOpening = messages.some((m) => typeof m.id === "string" && m.id.startsWith("opening-"));
+    const openingMessage = !hadSession && hasLocalOpening ? OPENING_MESSAGES[effectiveMode] : undefined;
 
     try {
       const headers = await getAuthHeaders();
@@ -986,8 +966,9 @@ export default function CarolinaScreen({ session }) {
         body: JSON.stringify({
           sessionId: hadSession ? activeSessionId : null,
           message: text,
-          mode: mode || "conversation",
+          mode: effectiveMode,
           resources: currentResources,
+          openingMessage,
         }),
       });
       if (!res.ok) throw new Error("Chat request failed");
@@ -1050,7 +1031,6 @@ export default function CarolinaScreen({ session }) {
 
     setIsStreaming(false);
     setStreamingContent("");
-    window.dispatchEvent(new CustomEvent("carolina-sessions-changed"));
   };
 
   // ─── Resource handling ─────────────────────────────────────
@@ -1127,7 +1107,6 @@ export default function CarolinaScreen({ session }) {
         onToggleStar={handleToggleStar}
         onCallClick={handleCallClick}
         onHistoryClick={() => setShowConversations(true)}
-        isMobile={isMobile}
       />
 
       <div
@@ -1183,10 +1162,9 @@ export default function CarolinaScreen({ session }) {
         />
       </div>
 
-      {/* Mobile conversations overlay */}
-      <ConversationsOverlay
-        isOpen={showConversations}
-        onClose={() => setShowConversations(false)}
+      <CarolinaHistorySheet
+        open={showConversations}
+        onOpenChange={setShowConversations}
         onSelectSession={(id) => {
           setSearchParams({ session: id });
         }}

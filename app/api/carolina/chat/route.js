@@ -34,7 +34,7 @@ export async function POST(req) {
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { sessionId, message, mode, resources } = await req.json();
+  const { sessionId, message, mode, resources, openingMessage } = await req.json();
   if (!message || typeof message !== "string" || !message.trim()) {
     return Response.json({ error: "message is required" }, { status: 400 });
   }
@@ -61,6 +61,14 @@ export async function POST(req) {
 
     if (error) return Response.json({ error: error.message }, { status: 500 });
     activeSessionId = session.id;
+
+    // Seed the mode's opening assistant message if the client shown one locally.
+    // Keeps conversation context complete and matches what the user saw.
+    if (openingMessage && typeof openingMessage === "string" && openingMessage.trim()) {
+      await supabase
+        .from("chat_messages")
+        .insert({ session_id: activeSessionId, role: "assistant", content: openingMessage });
+    }
   }
 
   // Verify session belongs to user
